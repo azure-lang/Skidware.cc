@@ -57,7 +57,7 @@ local Tabs = {
 local silent = Tabs.main:AddLeftGroupbox("Silent Aim")
 local aimbot = Tabs.main:AddRightGroupbox('Aimbot')
 local rage = Tabs.main:AddLeftGroupbox("Rage Bot")
-local aura = Tabs.main:AddRightGroupbox("Meele Aura")
+local meele = Tabs.main:AddRightGroupbox("Meele Aura")
 
 local SectionSettings = {
     SilentAim = {
@@ -76,6 +76,15 @@ local SectionSettings = {
         HitChanceToggle = false,
         Filled = false,
         RandomTime = 1
+    },
+    MeeleAura = {
+        Enabled = false,
+        ShowAnim = false,
+        Distance = 15,
+        checkteam = false,
+        checkdowned = false,
+        targetparts = {"Head"},
+        randomtime = 1
     }
 }
 
@@ -424,6 +433,149 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local plrs = Players
+local me = plrs.LocalPlayer
+local run = RunService
+local eventsFolder = ReplicatedStorage:WaitForChild("Events")
+
+local AttachCD = {
+    ["Fists"] = .05,
+    ["Knuckledusters"] = .05,
+    ["Nunchucks"] = 0.05,
+    ["Shiv"] = .05,
+    ["Bat"] = 1,
+    ["Metal-Bat"] = 1,
+    ["Chainsaw"] = 2.5,
+    ["Balisong"] = .05,
+    ["Rambo"] = .3,
+    ["Shovel"] = 3,
+    ["Sledgehammer"] = 2,
+    ["Katana"] = .1,
+    ["Wrench"] = .1,
+    ["FireAxe"] = 2.6
+}
+
+local remoteFunctionPath = "XMHH.2"
+local remoteEventPath = "XMHH2.2"   
+
+local remote1 = eventsFolder:WaitForChild(remoteFunctionPath) 
+local remote2 = eventsFolder:WaitForChild(remoteEventPath)   
+
+local AttachTick = 0
+local attachcd = 0.5
+
+local MeleeAura_Connection
+
+local function MeleeAura_Disable()
+    SectionSettings.MeleeAura.Enabled = false
+    if MeleeAura_Connection and MeleeAura_Connection.Connected then
+        MeleeAura_Connection:Disconnect()
+    end
+    MeleeAura_Connection = nil
+end
+
+local function Attack(target)
+    if not (target and target:FindFirstChild("Head")) then return end
+
+    local mychar = me.Character
+    if not mychar then return end
+    local TOOL = mychar:FindFirstChildOfClass("Tool")
+    if not TOOL then return end
+    local targetpart = target:FindFirstChild(SectionSettings.MeeleAura.targetparts[1]) or target:FindFirstChild("Head")
+    
+    local hrp = mychar:FindFirstChild("HumanoidRootPart")
+    local humanoid = mychar:FindFirstChildOfClass("Humanoid")
+    if not hrp or not humanoid then return end
+
+    local AnimFolder = TOOL:FindFirstChild("AnimsFolder")
+    if not AnimFolder then return end
+    local anim = AnimFolder:FindFirstChild("Slash1")
+    if not anim then return end
+
+    if tick() - AttachTick >= attachcd then
+        AttachTick = tick()
+
+        local success1, result = pcall(function()
+            return remote1:InvokeServer("🍞", tick(), TOOL, "43TRFWX", "Normal", tick(), true)
+        end)
+
+        if not success1 then return end
+
+        attachcd = AttachCD[TOOL.Name] or 1/2
+
+        if SectionSettings.MeleeAura.ShowAnim then
+            local animator = humanoid:FindFirstChild("Animator")
+            if animator then
+                local load = animator:LoadAnimation(anim)
+                load:Play()
+                load:AdjustSpeed(1.3)
+            end
+        end
+
+        local Handle = TOOL:FindFirstChild("WeaponHandle") or TOOL:FindFirstChild("Handle") or mychar:FindFirstChild("Right Arm")
+
+        if Handle and head and hrp then
+            local arg2 = {
+                [1] = "🍞",
+                [2] = tick(),
+                [3] = TOOL,
+                [4] = "2389ZFX34",
+                [5] = result,
+                [6] = false,
+                [7] = Handle,
+                [8] = targetpart,
+                [9] = target,
+                [10] = hrp.Position,
+                [11] = head.Position
+            }
+
+            pcall(function()
+                remote2:FireServer(unpack(arg2))
+            end)
+        end
+
+        task.wait(0.3 + math.random() * 0.2)
+    end
+end
+
+local function runAttackLoop()
+    return run.RenderStepped:Connect(function()
+        if not SectionSettings.MeleeAura.Enabled then return end
+        local char = me.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            for _, plr in ipairs(plrs:GetPlayers()) do
+                if SectionSettings.MeeleAura.checkteam and plr.Team == me.Team then continue end
+                if SectionSettings.MeeleAura.checkdowned and IsPlayerDowned(plr) then continue end
+                if plr ~= me then
+                    local c = plr.Character
+                    local hrp2 = c and c:FindFirstChild("HumanoidRootPart")
+                    local hum = c and c:FindFirstChildOfClass("Humanoid")
+                    if hrp2 and hum then
+                        local dist = (hrp.Position - hrp2.Position).Magnitude
+                        if dist <= SectionSettings.MeleeAura.Distance then
+                            Attack(c)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function MeleeAura_Enable()
+    if SectionSettings.MeleeAura.Enabled then return end
+    SectionSettings.MeleeAura.Enabled = true
+    if MeleeAura_Connection and MeleeAura_Connection.Connected then
+        MeleeAura_Connection:Disconnect()
+    end
+    MeleeAura_Connection = runAttackLoop()
+end
+
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
 }
@@ -449,6 +601,18 @@ local function runRandomLoop1()
         local v2 = parts_list[math.random(1, #parts_list)]
         functions.aimpart = {v2}
         task.wait(random1time)
+    end
+end
+
+local random2Active = false
+local function runRandomLoop2()
+    if random2Active then return end
+    random2Active = true
+    while random2Active do
+        local random2time = SectionSettings.MeeleAura.randomtime or 1
+        local v3 = parts_list[math.random(1, #parts_list)]
+        SectionSettings.MeeleAura.targetparts = {v3}
+        task.wait(random2time)
     end
 end
 
@@ -546,7 +710,25 @@ rage:AddToggle('ragehitlog', { Text = 'Hit Log', Default = false, Callback = fun
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) Settings.bulletTracerEnabled = Value end })
 rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 2000, Rounding = 1, Compact = false, Callback = function(Value) Settings.maxDistance = Value end })
 rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Settings.shootSpeed = Value end })
-aimbot:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) Settings.fireInterval = Value end })
+rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) Settings.fireInterval = Value end })
+
+meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) SectionSettings.MeeleAura.Enabled = Value end })
+meele:AddToggle('meeleshowanim', { Text = 'Show Animation', Default = false, Callback = function(Value) SectionSettings.MeeleAura.ShowAnim = Value end })
+meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = function(Value) SectionSettings.MeeleAura.checkteam = Value end })
+meele:AddToggle('meeledowned', { Text = 'Check Downed', Default = false, Callback = function(Value) SectionSettings.MeeleAura.checkdowned = Value end })
+
+meele:AddDropdown('AimPartDropdown', {
+    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
+    Default = 1, Multi = false, 
+    Text = 'Aim Parts',
+    Callback = function(Value)
+        if Value == "Random" then task.spawn(runRandomLoop2) else random2Active = false SectionSettings.MeeleAura.targetparts = {Value} end
+    end
+})
+
+meele:AddSlider('meelerandomtime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.randomtime = Value end })
+meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.Distance = Value end })
+
 
 local FPS = 60;
 
