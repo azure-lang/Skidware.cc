@@ -728,31 +728,3 @@ meele:AddDropdown('AimPartDropdown', {
 
 meele:AddSlider('meelerandomtime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.randomtime = Value end })
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.Distance = Value end })
-
-
-local FPS = 60;
-
-local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
-    FrameCounter += 1;
-
-    if (tick() - FrameTimer) >= 1 then
-        FPS = FrameCounter;
-        FrameTimer = tick();
-        FrameCounter = 0;
-    end;
-
-    Library:SetWatermark(('Skidware.cc | Crminality | %s fps | %s ms'):format(
-        math.floor(FPS),
-        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
-    ));
-end);
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
-ThemeManager:SetFolder('MyScriptHub')
-SaveManager:SetFolder('MyScriptHub/specific-game')
-SaveManager:BuildConfigSection(Tabs['UI Settings'])
-ThemeManager:ApplyToTab(Tabs['UI Settings'])
-SaveManager:LoadAutoloadConfig()
