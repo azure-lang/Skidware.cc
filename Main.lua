@@ -58,6 +58,7 @@ local silent = Tabs.main:AddLeftGroupbox("Silent Aim")
 local aimbot = Tabs.main:AddRightGroupbox('Aimbot')
 local rage = Tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = Tabs.main:AddRightGroupbox("Meele Aura")
+local playeresp = Tabs.visuals:AddLeftGroupbox("Player Visuals")
 
 local SectionSettings = {
     SilentAim = {
@@ -104,6 +105,14 @@ local Settings = {
     tracerColor = Color3.fromRGB(255, 0, 0),
     showFOV = false
 }
+
+local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/2dU36TmL"))()
+ESP.Enabled = false
+ESP.ShowBox = false
+ESP.ShowName = false
+ESP.ShowHealth = false
+ESP.ShowTracer = false
+ESP.ShowDistance = false
 
 local Events = ReplicatedStorage:WaitForChild("Events")
 local GNX_S = Events:WaitForChild("GNX_S")
@@ -575,6 +584,60 @@ local function MeleeAura_Enable()
     end
     MeleeAura_Connection = runAttackLoop()
 end
+--//Toggle\\--
+getgenv().ChamsToggle = false -- This toggles the esp, turning it to false will turn it off
+getgenv().TC = false
+
+--//Variables\\--
+local P = game:GetService("Players")
+local LP = P.LocalPlayer
+
+--//Debounce\\--
+local DB = false
+
+--//Loop\\--
+while task.wait() do
+	if not getgenv().Toggle then
+		break
+	end
+	if DB then 
+		return 
+	end
+	DB = true
+
+	pcall(function()
+		for i,v in pairs(P:GetChildren()) do
+			if v:IsA("Player") then
+				if v ~= LP then
+					if v.Character then
+
+						local pos = math.floor(((LP.Character:FindFirstChild("HumanoidRootPart")).Position - (v.Character:FindFirstChild("HumanoidRootPart")).Position).magnitude)
+						-- Credits to Infinite Yield for this part (pos) ^^^^^^
+
+						if v.Character:FindFirstChild("Totally NOT Esp") == nil and v.Character:FindFirstChild("Icon") == nil and getgenv().TC == false then
+							--//ESP-Highlight\\--
+							local ESP = Instance.new("Highlight", v.Character)
+
+							ESP.Name = "Totally NOT Esp"
+							ESP.Adornee = v.Character
+							ESP.Archivable = true
+							ESP.Enabled = true
+							ESP.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+							ESP.FillColor = Color3.fromRGB(0, 0, 0)
+							ESP.FillTransparency = 0.3
+							ESP.OutlineColor = Color3.fromRGB(255, 255, 255)
+							ESP.OutlineTransparency = 0
+						end
+					end
+				end
+			end
+		end
+	end)
+
+	wait()
+
+	DB = false
+end
 
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
@@ -728,3 +791,11 @@ meele:AddDropdown('AimPartDropdown', {
 
 meele:AddSlider('meelerandomtime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.randomtime = Value end })
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.Distance = Value end })
+
+playeresp:AddToggle('espenabled', { Text = 'Toggle', Default = false, Callback = function(Value) ESP.Enabled = Value end })
+playeresp:AddToggle('espbox', { Text = 'Show Box', Default = false, Callback = function(Value) ESP.ShowBox = Value end })
+playeresp:AddToggle('espnames', { Text = 'Show Names', Default = false, Callback = function(Value) ESP.ShowName = Value end })
+playeresp:AddToggle('esphealth', { Text = 'Show Health', Default = false, Callback = function(Value) ESP.ShowHealth = Value end })
+playeresp:AddToggle('espdistance', { Text = 'Show Distance', Default = false, Callback = function(Value) ESP.ShowDistance = Value end })
+playeresp:AddToggle('esptracers', { Text = 'Show Tracers', Default = false, Callback = function(Value) ESP.ShowTracer = Value end })
+playeresp:AddToggle('espchams', { Text = 'Show Chams', Default = false, Callback = function(Value) if ESP.Enabled then getgenv().ChamsToggle = Value end })
