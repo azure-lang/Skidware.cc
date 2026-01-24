@@ -58,7 +58,7 @@ local silent = Tabs.main:AddLeftGroupbox("Silent Aim")
 local aimbot = Tabs.main:AddRightGroupbox('Aimbot')
 local rage = Tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = Tabs.main:AddRightGroupbox("Meele Aura")
-local playeresp = Tabs.visuals:AddLeftGroupbox("Player Visuals")
+local esp = Tabs.visuals:AddLeftGroupbox("Player Visuals")
 
 local SectionSettings = {
     SilentAim = {
@@ -792,10 +792,94 @@ meele:AddDropdown('AimPartDropdown', {
 meele:AddSlider('meelerandomtime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.randomtime = Value end })
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.Distance = Value end })
 
-playeresp:AddToggle('espenabled', { Text = 'Toggle', Default = false, Callback = function(Value) ESP.Enabled = Value end })
-playeresp:AddToggle('espbox', { Text = 'Show Box', Default = false, Callback = function(Value) ESP.ShowBox = Value end })
-playeresp:AddToggle('espnames', { Text = 'Show Names', Default = false, Callback = function(Value) ESP.ShowName = Value end })
-playeresp:AddToggle('esphealth', { Text = 'Show Health', Default = false, Callback = function(Value) ESP.ShowHealth = Value end })
-playeresp:AddToggle('espdistance', { Text = 'Show Distance', Default = false, Callback = function(Value) ESP.ShowDistance = Value end })
-playeresp:AddToggle('esptracers', { Text = 'Show Tracers', Default = false, Callback = function(Value) ESP.ShowTracer = Value end })
-playeresp:AddToggle('espchams', { Text = 'Show Chams', Default = false, Callback = function(Value) if ESP.Enabled then getgenv().ChamsToggle = Value end })
+esp:AddToggle("vis1", {
+	Text = "Enabled ESP",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    ESP.Enabled = Value
+end,
+})
+
+esp:AddToggle("vis2", {
+	Text = "Show Box",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    ESP.ShowBox = Value
+end,
+})
+
+esp:AddToggle("vis3", {
+	Text = "Show Name",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    ESP.ShowName = Value
+end,
+})
+
+esp:AddToggle("vis4", {
+	Text = "Show Health",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    ESP.ShowHealth = Value
+end,
+})
+
+esp:AddToggle("vis5", {
+	Text = "Show Tracer",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    ESP.ShowTracer = Value
+end,
+})
+
+esp:AddToggle("vis6", {
+	Text = "Show Distance",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    ESP.ShowDistance = Value
+end,
+})
+
+esp:AddToggle('espchams', { Text = 'Show Chams', Default = false, Callback = function(Value) getgenv().ChamsToggle = Value end })
