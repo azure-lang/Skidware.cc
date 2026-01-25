@@ -113,7 +113,8 @@ local Settings = {
     maxDistance = 2000,
     bulletTracerEnabled = false,
     tracerColor = Color3.fromRGB(255, 0, 0),
-    showFOV = false
+    showFOV = false,
+	sound= false
 }
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/2dU36TmL"))()
@@ -317,12 +318,22 @@ local function createTracer(startPos, endPos)
     task.spawn(function()
         for t = 0, 1, 0.02 do
             if tracer and tracer.Parent then
-                tracer.Transparency = 0
+                tracer.Transparency = t
                 task.wait(1/50)
             end
         end
         if tracer and tracer.Parent then tracer:Destroy() end
     end)
+end
+
+local function createSound()
+    local rust = Instance.new("Sound")
+    rust.SoundId = "rbxassetid://5043539486" -- Exemplo de som de hit (mude se quiser)
+    rust.Volume = 2
+    rust.PlayOnRemove = true
+    rust.Parent = game:GetService("SoundService")
+    rust:Play()
+    game:GetService("Debris"):AddItem(rust, 2)
 end
 
 local function MakeRaycastParams()
@@ -431,11 +442,16 @@ local function Shoot(target)
 
     createTracer(origin, chosenAimPoint)
 
-    if Settings.hitlogEnabled then
-        local now = tick()
-        if not lastHitNotify[target.UserId] or now - lastHitNotify[target.UserId] >= NOTIFY_COOLDOWN then
-            lastHitNotify[target.UserId] = now
+    local now = tick()
+    if not lastHitNotify[target.UserId] or now - lastHitNotify[target.UserId] >= NOTIFY_COOLDOWN then
+        lastHitNotify[target.UserId] = now
+        
+        if Settings.hitlogEnabled then
             StarterGui:SetCore("SendNotification", {Title = "RageBot Hit", Text = "Hit " .. target.Name, Duration = 2})
+        end
+        
+        if Settings.sound then
+            createSound()
         end
     end
 end
@@ -637,6 +653,7 @@ rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback
 rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) Settings.checkDowned = Value end })
 rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
 rage:AddToggle('ragehitlog', { Text = 'Hit Log', Default = false, Callback = function(Value) Settings.hitlogEnabled = Value end })
+rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) Settings.sound = Value end })
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) Settings.bulletTracerEnabled = Value end })
 rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 2000, Rounding = 1, Compact = false, Callback = function(Value) Settings.maxDistance = Value end })
 rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Settings.shootSpeed = Value end })
