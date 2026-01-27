@@ -37,6 +37,16 @@ local functions = {
     RageBot = false
 }
 
+local Meele = {
+    Toggle = false,
+    Team = false,
+    Downed = false,
+    FF = false,
+    Anim = false,
+    Target = {"Head"},
+    Distance = 15
+}
+
 local cockie = {
     SilentAimCircle = nil
 }
@@ -85,18 +95,7 @@ local SectionSettings = {
         HitChanceToggle = false,
         Filled = false,
         RandomTime = 1
-    },
-    MeleeAura = {
-        ShowAnim = true,
-        Distance = 1,
-        TargetPart = {"Head"},
-        CheckWhitelist = false,
-        CheckTeam = false,
-        HighlightEnabled = false,
-        HighlightColor = Color3.fromRGB(255, 0, 0),
-        SortMethod = "Distance",
-        CheckDowned = false,
-	}
+    }
 }
 
 local Settings = {
@@ -467,6 +466,120 @@ RunService.Heartbeat:Connect(function()
         lastShotTime = now
     end
 end)
+
+local plrs = game:GetService("Players")
+local me = plrs.LocalPlayer
+local run = game:GetService("RunService")
+local rp = game:GetService("ReplicatedStorage")
+local events = rp:FindFirstChild("Events")
+
+local remoteFunctionPath = "XMHH.2" 
+local remoteEventPath = "XMHH2.2"
+
+local remote1 = events and events:WaitForChild(remoteFunctionPath, 5)
+local remote2 = events and events:WaitForChild(remoteEventPath, 5)
+
+local AttachCD = {["Fists"] = .35, ["BBaton"] = .5, ["__ZombieFists1"] = .35, ["__ZombieFists2"] = .37, ["__ZombieFists3"] = .22, ["__ZombieFists4"] = .4, ["__XFists"] = .35, ["Balisong"] = .3, ["Bat"] = 1.2, ["Bayonet"] = .6, ["BlackBayonet"] = .6, ["CandyCrowbar"] = 2.5, ["Chainsaw"] = 3, ["Crowbar"] = 1.2, ["Clippers"] = .6, ["CursedDagger"] = .8, ["DELTA-X04"] = .6, ["ERADICATOR"] = 2, ["ERADICATOR-II"] = 2, ["Fire-Axe"] = 1.6, ["GoldenAxe"] = .75, ["Golfclub"] = 1.2, ["Hatchet"] = .7, ["Katana"] = .6, ["Knuckledusters"] = .5, ["Machete"] = .7, ["Metal-Bat"] = 1.3, ["Nunchucks"] = .3, ["PhotonBlades"] = .8, ["Rambo"] = .8, ["ReforgedKatana"] = .85, ["Rendbreaker"] = 1.5, ["RoyalBroadsword"] = 1, ["Sabre"] = .7, ["Scythe"] = 1.2, ["Shiv"] = .5, ["Shovel"] = 2.5, ["SlayerSword"] = 1.5, ["Sledgehammer"] = 2.2, ["Taiga"] = .7, ["Tomahawk"] = .85, ["Wrench"] = .6, ["_BFists"] = .35, ["_FallenBlade"] = 1.3, ["_Sledge"] = 2.2, ["new_oldSlayerSword"] = 1.5}
+
+local currentSlash = 1
+local lastAttack = 0
+local meeleconn
+
+local function attack(target)
+    local char = me.Character
+    local tool = char and char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+
+    local cd = AttachCD[tool.Name] or 0.5
+    if tick() - lastAttack < cd then return end
+    lastAttack = tick()
+
+    local aimtarget = Meele.Target[1] or "Head"
+    local aimpart = target:FindFirstChild(aimtarget)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not (aimpart and hrp and remote1 and remote2) then return end
+
+    local arg1 = {
+        [1] = "🍞",
+        [2] = tick(),
+        [3] = tool,
+        [4] = "43TRFWX",
+        [5] = "Normal",
+        [6] = tick(),
+        [7] = true
+    }
+
+    local success1, result = pcall(function()
+        return remote1:InvokeServer(unpack(arg1))
+    end)
+
+    if not success1 then return end
+
+    task.wait(0.05)
+
+    local handle = tool:FindFirstChild('WeaponHandle') or tool:FindFirstChild("Handle") or char:FindFirstChild("Right Arm")
+    
+    if handle then
+        local arg2 = {
+            [1] = "🍞",
+            [2] = tick(),
+            [3] = tool,
+            [4] = "2389ZFX34",
+            [5] = result,
+            [6] = false,
+            [7] = handle,
+            [8] = aimpart,
+            [9] = target,
+            [10] = hrp.Position,
+            [11] = aimpart.Position
+        }
+        pcall(function()
+            remote2:FireServer(unpack(arg2))
+        end)
+    end
+
+    if Meele.Anim then
+        local animFolder = tool:FindFirstChild("AnimsFolder")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if animFolder and hum then
+            local animator = hum:FindFirstChildOfClass("Animator") or hum
+            local anim = animFolder:FindFirstChild("Slash" .. currentSlash)
+            if anim and animator then
+                animator:LoadAnimation(anim):Play(0.1, 1, 1.3)
+                currentSlash = animFolder:FindFirstChild("Slash" .. (currentSlash + 1)) and (currentSlash + 1) or 1
+            end
+        end
+    end
+end
+
+local function loop()
+    return run.RenderStepped:Connect(function()
+        if not Meele.Toggle then return end
+        local char = me.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        for _, p in pairs(plrs:GetPlayers()) do
+            if p == me then continue end
+            local c = p.Character
+            local targetHrp = c and c:FindFirstChild("HumanoidRootPart")
+            local hum = c and c:FindFirstChildOfClass("Humanoid")
+            
+            if targetHrp and hum and hum.Health > 0 then
+                if Meele.Team and p.Team == me.Team then continue end
+                if Meele.Downed and hum.Health < 15 then continue end
+                if Meele.FF and c:FindFirstChildOfClass('ForceField') then continue end
+                
+                if (targetHrp.Position - hrp.Position).Magnitude <= Meele.Distance then
+                    attack(c)
+                    break
+                end
+            end
+        end
+    end)
+end
+
+meeleconn = loop()
 --//Toggle\\--
 getgenv().ChamsToggle = false -- This toggles the esp, turning it to false will turn it off
 getgenv().TC = false
@@ -660,139 +773,23 @@ rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max 
 rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) Settings.fireInterval = Value end })
 
 meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) 
-		functions.meleeauraF = Value
-        if Value then
-            LastTick = tick()
-            AttachTick = tick()
-            AttachCD = {["Fists"] = .35, ["BBaton"] = .5, ["__ZombieFists1"] = .35, ["__ZombieFists2"] = .37, ["__ZombieFists3"] = .22, ["__ZombieFists4"] = .4, ["__XFists"] = .35, ["Balisong"] = .3, ["Bat"] = 1.2, ["Bayonet"] = .6, ["BlackBayonet"] = .6, ["CandyCrowbar"] = 2.5, ["Chainsaw"] = 3, ["Crowbar"] = 1.2, ["Clippers"] = .6, ["CursedDagger"] = .8, ["DELTA-X04"] = .6, ["ERADICATOR"] = 2, ["ERADICATOR-II"] = 2, ["Fire-Axe"] = 1.6, ["GoldenAxe"] = .75, ["Golfclub"] = 1.2, ["Hatchet"] = .7, ["Katana"] = .6, ["Knuckledusters"] = .5, ["Machete"] = .7, ["Metal-Bat"] = 1.3, ["Nunchucks"] = .3, ["PhotonBlades"] = .8, ["Rambo"] = .8, ["ReforgedKatana"] = .85, ["Rendbreaker"] = 1.5, ["RoyalBroadsword"] = 1, ["Sabre"] = .7, ["Scythe"] = 1.2, ["Shiv"] = .5, ["Shovel"] = 2.5, ["SlayerSword"] = 1.5, ["Sledgehammer"] = 2.2, ["Taiga"] = .7, ["Tomahawk"] = .85, ["Wrench"] = .6, ["_BFists"] = .35, ["_FallenBlade"] = 1.3, ["_Sledge"] = 2.2, ["new_oldSlayerSword"] = 1.5}
-            if not remotes.MeleeAuraTask then
-                remotes.MeleeAuraTask = task.spawn(function()
-                    currentSlash = 1
-                    function Attack(target)
-                        if not (target and target:FindFirstChild("Head")) then return end
-                        if not me.Character then return end
-                        TOOL = me.Character:FindFirstChildOfClass("Tool")
-                        if not TOOL then return end
-                        attachcd = AttachCD[TOOL.Name] or 0.5
-                        if tick() - AttachTick >= attachcd then
-                            result = remote1:InvokeServer("🍞", tick(), TOOL, "43TRFWX", "Normal", tick(), true)
-                            if SectionSettings.MeleeAura.ShowAnim then
-                                animFolder = TOOL:FindFirstChild("AnimsFolder")
-                                if animFolder then
-                                    animName = "Slash" .. currentSlash
-                                    anim = animFolder:FindFirstChild(animName)
-                                    if anim then
-                                        animator = me.Character:FindFirstChildOfClass("Humanoid"):FindFirstChild("Animator")
-                                        if animator then
-                                            animator:LoadAnimation(anim):Play(0.1, 1, 1.3)
-                                            currentSlash = currentSlash + 1
-                                            if not animFolder:FindFirstChild("Slash" .. currentSlash) then
-                                                currentSlash = 1
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                            task.wait(0.3 + math.random() * 0.2)
-                            Handle = TOOL:FindFirstChild("WeaponHandle") or TOOL:FindFirstChild("Handle") or me.Character:FindFirstChild("Left Arm")
-                            if TOOL then
-                                targetPartName = #SectionSettings.MeleeAura.TargetPart > 0 and SectionSettings.MeleeAura.TargetPart[math.random(1, #SectionSettings.MeleeAura.TargetPart)] or ValidMeleeTargetParts[math.random(1, #ValidMeleeTargetParts)]
-                                targetPart = target:FindFirstChild(targetPartName)
-                                if not targetPart then
-                                    targetPart = target:FindFirstChild(ValidMeleeTargetParts[math.random(1, #ValidMeleeTargetParts)])
-                                end
-                                if not targetPart then return end
-                                arg2 = {
-                                    "🍞",
-                                    tick(),
-                                    TOOL,
-                                    "2389ZFX34",
-                                    result,
-                                    true,
-                                    Handle,
-                                    targetPart,
-                                    target,
-                                    me.Character.HumanoidRootPart.Position,
-                                    targetPart.Position
-                                }
-                                if TOOL.Name == "Chainsaw" then
-                                    for i = 1, 15 do remote2:FireServer(unpack(arg2)) end
-                                else
-                                    remote2:FireServer(unpack(arg2))
-                                end
-                                AttachTick = tick()
-                            end
-                            UpdateHighlightMelee(target)
-                        end
-                    end
-                    function DownedCheck(Character)
-                        PlayerName = Character.Name
-                        if not game:GetService("ReplicatedStorage").CharStats:FindFirstChild(PlayerName) then return true end
-                        downed = game:GetService("ReplicatedStorage").CharStats[PlayerName].Downed.Value
-                        health = Character:FindFirstChildOfClass("Humanoid").Health
-                        return downed or health <= 15
-                    end
-                    while functions.meleeauraF do
-                        mychar = me.Character or me.CharacterAdded:Wait()
-                        if mychar and mychar:FindFirstChild("HumanoidRootPart") then
-                            myhrp = mychar.HumanoidRootPart
-                            targets = {}
-                            for _, a in ipairs(plrs:GetPlayers()) do
-                                if a ~= me and a.Character and a.Character:FindFirstChild("HumanoidRootPart") then
-                                    PlayerName = a.Name
-                                    hrp = a.Character.HumanoidRootPart
-                                    distance = (myhrp.Position - hrp.Position).Magnitude
-                                    if distance < SectionSettings.MeleeAura.Distance then
-                                        hasForceField = false
-                                        for _, child in ipairs(a.Character:GetChildren()) do
-                                            if child:IsA("ForceField") then
-                                                hasForceField = true
-                                                break
-                                            end
-                                        end
-                                        if hasForceField then continue end
-                                        if SectionSettings.MeleeAura.CheckWhitelist and GlobalWhiteList[PlayerName] then continue end
-                                        if SectionSettings.MeleeAura.CheckTeam and a.Team == me.Team then continue end
-                                        if SectionSettings.MeleeAura.CheckDowned and DownedCheck(a.Character) then continue end
-                                        table.insert(targets, {Player = a, Distance = distance, Health = a.Character:FindFirstChildOfClass("Humanoid").Health})
-                                    end
-                                end
-                            end
-                            if SectionSettings.MeleeAura.SortMethod == "Health" then
-                                table.sort(targets, function(a, b) return a.Health < b.Health end)
-                            else
-                                table.sort(targets, function(a, b) return a.Distance < b.Distance end)
-                            end
-                            if #targets > 0 then
-                                Attack(targets[1].Player.Character)
-                            end
-                        end
-                        run.Heartbeat:Wait()
-                    end
-                end)
-            end
-        elseif not Value then
-            if remotes.MeleeAuraTask then
-                task.cancel(remotes.MeleeAuraTask)
-                remotes.MeleeAuraTask = nil
-            end
-		end
+		Meele.Toggle = Value
 	end
 })
-meele:AddToggle('meeleshowanim', { Text = 'Show Animation', Default = false, Callback = function(Value) SectionSettings.MeeleAura.ShowAnim = Value end })
-meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = function(Value) SectionSettings.MeeleAura.CheckTeam = Value end })
+meele:AddToggle('meeleshowanim', { Text = 'Show Animation', Default = false, Callback = function(Value) Meele.Anim = Value end })
+meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = function(Value) Meele.Team = Value end })
+meele:AddToggle('meeledowned', { Text = 'Check Downed', Default = false, Callback = function(Value) Meele.Downed = Value end })
 
 meele:AddDropdown('AimPartDropdown', {
-    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
+    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg" },
     Default = 1, Multi = false, 
     Text = 'Aim Parts',
     Callback = function(Value)
-        if Value == "Random" then task.spawn(runRandomLoop2) else random2Active = false SectionSettings.MeeleAura.targetparts = {Value} end
+        Meele.Target = {Value}
     end
 })
 
-meele:AddSlider('meelerandomtime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.randomtime = Value end })
-meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) SectionSettings.MeeleAura.Distance = Value end })
+meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
 
 esp:AddToggle("vis1", {
 	Text = "Enabled ESP",
