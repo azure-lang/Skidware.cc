@@ -47,6 +47,10 @@ local Meele = {
     Distance = 15
 }
 
+local chams = {
+	enabled = false
+}
+
 local cockie = {
     SilentAimCircle = nil
 }
@@ -325,16 +329,6 @@ local function createTracer(startPos, endPos)
     end)
 end
 
-local function createSound()
-    local rust = Instance.new("Sound")
-    rust.SoundId = "rbxassetid://5043539486" -- Exemplo de som de hit (mude se quiser)
-    rust.Volume = 2
-    rust.PlayOnRemove = true
-    rust.Parent = game:GetService("SoundService")
-    rust:Play()
-    game:GetService("Debris"):AddItem(rust, 2)
-end
-
 local function MakeRaycastParams()
     local rp = RaycastParams.new()
     rp.FilterType = Enum.RaycastFilterType.Exclude
@@ -580,59 +574,28 @@ local function loop()
 end
 
 meeleconn = loop()
---//Toggle\\--
-getgenv().ChamsToggle = false -- This toggles the esp, turning it to false will turn it off
-getgenv().TC = false
 
---//Variables\\--
-local P = game:GetService("Players")
-local LP = P.LocalPlayer
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local me = Players.LocalPlayer
 
---//Debounce\\--
-local DB = false
+local function highlightPlayers()
+    if chams.enabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("Humanoid") and player ~= me then
+                local highlight = Instance.new("Highlight")
+                highlight.Parent = player.Character
+                highlight.FillColor = Color3.fromRGB(0, 0, 0)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.OutlineTransparency = 0
+            end
+        end
+    end
+end
 
---//Loop\\--
-while task.wait() do
-	if not getgenv().Toggle then
-		break
-	end
-	if DB then 
-		return 
-	end
-	DB = true
-
-	pcall(function()
-		for i,v in pairs(P:GetChildren()) do
-			if v:IsA("Player") then
-				if v ~= LP then
-					if v.Character then
-
-						local pos = math.floor(((LP.Character:FindFirstChild("HumanoidRootPart")).Position - (v.Character:FindFirstChild("HumanoidRootPart")).Position).magnitude)
-						-- Credits to Infinite Yield for this part (pos) ^^^^^^
-
-						if v.Character:FindFirstChild("Totally NOT Esp") == nil and v.Character:FindFirstChild("Icon") == nil and getgenv().TC == false then
-							--//ESP-Highlight\\--
-							local ESP = Instance.new("Highlight", v.Character)
-
-							ESP.Name = "Totally NOT Esp"
-							ESP.Adornee = v.Character
-							ESP.Archivable = true
-							ESP.Enabled = true
-							ESP.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-							ESP.FillColor = Color3.fromRGB(0, 0, 0)
-							ESP.FillTransparency = 0.3
-							ESP.OutlineColor = Color3.fromRGB(255, 255, 255)
-							ESP.OutlineTransparency = 0
-						end
-					end
-				end
-			end
-		end
-	end)
-
-	wait()
-
-	DB = false
+while task.wait(0.1) do
+    highlightPlayers()
 end
 
 local parts_list = {
@@ -878,6 +841,21 @@ esp:AddToggle("vis6", {
 
 	Callback = function(Value)
     ESP.ShowDistance = Value
+end,
+})
+
+esp:AddToggle("vis7", {
+	Text = "Show Chams",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    chams.enabled = Value
 end,
 })
 
