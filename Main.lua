@@ -881,4 +881,3 @@ esp:AddToggle("vis6", {
 end,
 })
 
-esp:AddToggle('espchams', { Text = 'Show Chams', Default = false, Callback = function(Value) getgenv().ChamsToggle = Value end })
