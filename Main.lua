@@ -700,7 +700,9 @@ aimbot:AddToggle('aimbotfov_f', { Text = 'Filled', Default = false, Callback = f
 aimbot:AddSlider('aimbotfov_s', { Text = 'FOV Size', Default = 100, Min = 0, Max = 500, Rounding = 2, Compact = false, Callback = function(Value) functions.fovsize = Value end })
 aimbot:AddSlider('aimbotfov_y', { Text = 'Thickness', Default = 1, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) functions.thickness = Value end })
 
-rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) functions.RageBot = Value end })
+rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) functions.RageBot = Value end }):AddKeyPicker("ragekey", {
+    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Rage Bot Key", NoUI = false,
+})
 rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
 rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) Settings.checkWall = Value end })
 rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) Settings.checkDowned = Value end })
@@ -715,7 +717,10 @@ rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0
 meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) 
 		Meele.Toggle = Value
 	end
+}):AddKeyPicker("meelkey", {
+    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Meele Aura Key", NoUI = false,
 })
+
 meele:AddToggle('meeleshowanim', { Text = 'Show Animation', Default = false, Callback = function(Value) Meele.Anim = Value end })
 meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = function(Value) Meele.Team = Value end })
 meele:AddToggle('meeledowned', { Text = 'Check Downed', Default = false, Callback = function(Value) Meele.Downed = Value end })
@@ -744,6 +749,8 @@ esp:AddToggle("vis1", {
 	Callback = function(Value)
     ESP.Enabled = Value
 end,
+}):AddKeyPicker("espkey", {
+    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "ESP Key", NoUI = false,
 })
 
 esp:AddToggle("vis2", {
@@ -841,7 +848,7 @@ local WatermarkConnection = RunService.RenderStepped:Connect(function()
     ));
 end);
 
-Library.KeybindFrame.Visible = true; 
+Library.KeybindFrame.Visible = false; 
 
 Library:OnUnload(function()
     WatermarkConnection:Disconnect()
@@ -861,3 +868,17 @@ SaveManager:SetFolder('skidware.cc/criminality')
 SaveManager:BuildConfigSection(Tabs['UI Settings'])
 ThemeManager:ApplyToTab(Tabs['UI Settings'])
 SaveManager:LoadAutoloadConfig()
+MenuGroup:AddToggle("Keybind", {
+	Text = "Key Bind",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    	Library.KeybindFrame.Visible = Value 
+	end,
+})
