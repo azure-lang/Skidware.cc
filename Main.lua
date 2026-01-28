@@ -575,29 +575,6 @@ end
 
 meeleconn = loop()
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local me = Players.LocalPlayer
-
-local function highlightPlayers()
-    if chams.enabled then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player.Character and player.Character:FindFirstChild("Humanoid") and player ~= me then
-                local highlight = Instance.new("Highlight")
-                highlight.Parent = player.Character
-                highlight.FillColor = Color3.fromRGB(0, 0, 0)
-                highlight.FillTransparency = 0.5
-                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                highlight.OutlineTransparency = 0
-            end
-        end
-    end
-end
-
-while task.wait(0.1) do
-    highlightPlayers()
-end
-
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
 }
@@ -841,21 +818,6 @@ esp:AddToggle("vis6", {
 
 	Callback = function(Value)
     ESP.ShowDistance = Value
-end,
-})
-
-esp:AddToggle("vis7", {
-	Text = "Show Chams",
-	Tooltip = "This is a tooltip",
-	DisabledTooltip = "I am disabled!",
-
-	Default = false,
-	Disabled = false,
-	Visible = true,
-	Risky = false,
-
-	Callback = function(Value)
-    chams.enabled = Value
 end,
 })
 
