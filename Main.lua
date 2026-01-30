@@ -120,7 +120,7 @@ local Settings = {
 	sound= false
 }
 
-local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/2dU36TmL"))()
+local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/0Bt9P9z5"))()
 ESP.Enabled = false
 ESP.ShowBox = false
 ESP.ShowName = false
