@@ -128,6 +128,9 @@ ESP.ShowHealth = false
 ESP.ShowTracer = false
 ESP.ShowDistance = false
 
+local bones = loadstring(game:HttpGet("https://pastebin.com/raw/zYcYV8UL"))()
+bones.enabled = false
+
 local Events = ReplicatedStorage:WaitForChild("Events")
 local GNX_S = Events:WaitForChild("GNX_S")
 local ZFKLF__H = Events:WaitForChild("ZFKLF__H")
@@ -825,6 +828,21 @@ esp:AddToggle("vis6", {
 
 	Callback = function(Value)
     ESP.ShowDistance = Value
+end,
+})
+
+esp:AddToggle("vis7", {
+	Text = "Show Skeletons",
+	Tooltip = "This is a tooltip",
+	DisabledTooltip = "I am disabled!",
+
+	Default = false,
+	Disabled = false,
+	Visible = true,
+	Risky = false,
+
+	Callback = function(Value)
+    bones.enabled = Value
 end,
 })
 
