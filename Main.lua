@@ -128,9 +128,6 @@ ESP.ShowHealth = false
 ESP.ShowTracer = false
 ESP.ShowDistance = false
 
-local bones = loadstring(game:HttpGet("https://pastebin.com/raw/zYcYV8UL"))()
-bones.enabled = false
-
 local Events = ReplicatedStorage:WaitForChild("Events")
 local GNX_S = Events:WaitForChild("GNX_S")
 local ZFKLF__H = Events:WaitForChild("ZFKLF__H")
@@ -578,6 +575,111 @@ end
 
 meeleconn = loop()
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local ESP = {}
+local enabled = false
+ESP.__index = ESP
+
+function ESP.new()
+    local self = setmetatable({}, ESP)
+    self.espCache = {}
+    return self
+end
+
+function ESP:createDrawing(type, properties)
+    local drawing = Drawing.new(type)
+    for prop, val in pairs(properties) do
+        drawing[prop] = val
+    end
+    return drawing
+end
+
+local bodyConnections = {
+    R15 = {
+        {"Head", "UpperTorso"}, {"UpperTorso", "LowerTorso"}, {"LowerTorso", "LeftUpperLeg"},
+        {"LowerTorso", "RightUpperLeg"}, {"LeftUpperLeg", "LeftLowerLeg"}, {"LeftLowerLeg", "LeftFoot"},
+        {"RightUpperLeg", "RightLowerLeg"}, {"RightLowerLeg", "RightFoot"}, {"UpperTorso", "LeftUpperArm"},
+        {"UpperTorso", "RightUpperArm"}, {"LeftUpperArm", "LeftLowerArm"}, {"LeftLowerArm", "LeftHand"},
+        {"RightUpperArm", "RightLowerArm"}, {"RightLowerArm", "RightHand"}
+    },
+    R6 = {
+        {"Head", "Torso"}, {"Torso", "Left Arm"}, {"Torso", "Right Arm"},
+        {"Torso", "Left Leg"}, {"Torso", "Right Leg"}
+    }
+}
+
+function ESP:updateSkeleton(cache, character)
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+
+    local connections = bodyConnections[humanoid.RigType.Name] or {}
+    
+    for _, connection in ipairs(connections) do
+        local partA = character:FindFirstChild(connection[1])
+        local partB = character:FindFirstChild(connection[2])
+        local id = connection[1] .. "-" .. connection[2]
+
+        if partA and partB then
+            local posA, onScreenA = Camera:WorldToViewportPoint(partA.Position)
+            local posB, onScreenB = Camera:WorldToViewportPoint(partB.Position)
+            
+            local line = cache[id] or self:createDrawing("Line", {
+                Thickness = 1.5,
+                Color = Color3.fromRGB(255, 255, 255),
+                Transparency = 1
+            })
+            cache[id] = line
+
+            if onScreenA and onScreenB then
+                line.From = Vector2.new(posA.X, posA.Y)
+                line.To = Vector2.new(posB.X, posB.Y)
+                line.Visible = true
+            else
+                line.Visible = false
+            end
+        end
+    end
+end
+
+function ESP:removeEsp(player)
+    if self.espCache[player] then
+        for _, line in pairs(self.espCache[player]) do
+            line:Remove()
+        end
+        self.espCache[player] = nil
+    end
+end
+
+local espInstance = ESP.new()
+
+RunService.RenderStepped:Connect(function()
+    if enabled then
+		for _, player in ipairs(Players:GetPlayers()) do
+        	if player ~= LocalPlayer then
+            	local character = player.Character
+            	if character and character:FindFirstChild("HumanoidRootPart") then
+                	if not espInstance.espCache[player] then
+                    	espInstance.espCache[player] = {}
+                	end
+                	espInstance:updateSkeleton(espInstance.espCache[player], character)
+            	else
+                	if espInstance.espCache[player] then
+                    	for _, line in pairs(espInstance.espCache[player]) do line.Visible = false end
+                	end
+            	end
+        	end
+    	end
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    espInstance:removeEsp(player)
+end)
+
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
 }
@@ -842,7 +944,7 @@ esp:AddToggle("vis7", {
 	Risky = false,
 
 	Callback = function(Value)
-    bones.enabled = Value
+    enabled = Value
 end,
 })
 
