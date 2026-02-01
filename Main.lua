@@ -34,6 +34,7 @@ local functions = {
     ff = false,
     team = false,	
 	meleeauraF = false,
+	invisible = false,
     RageBot = false
 }
 
@@ -76,6 +77,7 @@ local aimbot = Tabs.main:AddRightGroupbox('Aimbot')
 local rage = Tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = Tabs.main:AddRightGroupbox("Meele Aura")
 local esp = Tabs.visuals:AddLeftGroupbox("Player Visuals")
+local plrsec = player:AddLeftGroupbox("Player Modifications")
 
 remote1 = game:GetService("ReplicatedStorage").Events["XMHH.2"]
 remote2 = game:GetService("ReplicatedStorage").Events["XMHH2.2"]
@@ -680,6 +682,245 @@ Players.PlayerRemoving:Connect(function(player)
     espInstance:removeEsp(player)
 end)
 
+local cloneref = cloneref or function(...) return ... end
+local Service = setmetatable({}, {
+    __index = function(_, k) return cloneref(game:GetService(k)) end
+})
+
+repeat task.wait() until game:IsLoaded()
+local Players = Service.Players
+local Player = Players and Players.LocalPlayer
+repeat task.wait() Player = Players and Players.LocalPlayer until Player
+
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid, HumanoidRootPart
+local function UpdateCharacterReferences()
+    Character = Player.Character
+    if Character then
+        HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+        Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    else
+        HumanoidRootPart = nil
+        Humanoid = nil
+    end
+end
+UpdateCharacterReferences()
+
+local Invis_Fixed = true
+local InvisEnabled = false
+local Track = nil
+local Animation = Instance.new("Animation")
+Animation.AnimationId = "rbxassetid://215384594"
+
+local RunService = Service.RunService
+local Heartbeat = RunService and RunService.Heartbeat
+local RenderStepped = RunService and RunService.RenderStepped
+local StarterGui = Service.StarterGui
+local CoreGui = Service.CoreGui
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "InvisWarningGUI"
+GUI.ResetOnSpawn = false
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.Parent = CoreGui
+
+local WarnLabel = Instance.new("TextLabel", GUI)
+WarnLabel.Text = "⚠️You are visible⚠️"
+WarnLabel.Visible = false
+WarnLabel.Size = UDim2.new(0, 200, 0, 30)
+WarnLabel.Position = UDim2.new(0.5, -100, 0.85, 0)
+WarnLabel.BackgroundTransparency = 1
+WarnLabel.Font = Enum.Font.GothamSemibold
+WarnLabel.TextSize = 24
+WarnLabel.TextColor3 = Color3.fromRGB(255,255,0)
+WarnLabel.TextStrokeTransparency = 0.5
+WarnLabel.ZIndex = 10
+
+local function Grounded()
+    return Humanoid and Humanoid:IsDescendantOf(workspace) and Humanoid.FloorMaterial ~= Enum.Material.Air
+end
+
+local function LoadAndPrepareTrack()
+    if Track then
+        pcall(function() Track:Stop() end)
+        Track = nil
+    end
+    if Humanoid then
+        local ok, res = pcall(function() return Humanoid:LoadAnimation(Animation) end)
+        if ok and res then
+            Track = res
+            Track.Priority = Enum.AnimationPriority.Action4
+        else
+            Track = nil
+        end
+    else
+        Track = nil
+    end
+end
+
+local function Invis_Disable()
+    if not InvisEnabled then return end
+    InvisEnabled = false
+    if Track then pcall(function() Track:Stop() end) end
+    if Humanoid then pcall(function() workspace.CurrentCamera.CameraSubject = Humanoid end) end
+    if Character then
+        for _, v in pairs(Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.Transparency == 0.5 then
+                v.Transparency = 0
+            end
+        end
+    end
+    WarnLabel.Visible = false
+end
+
+local function Invis_Enable()
+    if InvisEnabled or not Invis_Fixed then return end
+    UpdateCharacterReferences()
+    if not Character or not Humanoid or not HumanoidRootPart then return end
+    if not Character:FindFirstChild("Torso") then
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility FAILED", Text="Feature requires R6 Avatar.", Duration=5})
+        end)
+        return
+    end
+    InvisEnabled = true
+    pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end)
+    LoadAndPrepareTrack()
+end
+
+Player.CharacterAdded:Connect(function(newChar)
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    task.wait()
+    UpdateCharacterReferences()
+    if not Humanoid then
+        task.wait(0.5)
+        UpdateCharacterReferences()
+        if not Humanoid then
+            Invis_Fixed = false
+            if InvisEnabled then Invis_Disable() end
+            pcall(function()
+                StarterGui:SetCore("SendNotification", {Title="Invisibility Error", Text="Could not verify character type.", Duration=5})
+            end)
+            return
+        end
+    end
+    if Humanoid.RigType ~= Enum.HumanoidRigType.R6 then
+        Invis_Fixed = false
+        if InvisEnabled then Invis_Disable() end
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility Warning", Text="Non-R6 Avatar detected. Invisibility disabled.", Duration=5})
+        end)
+        return
+    else
+        Invis_Fixed = true
+    end
+    if InvisEnabled then
+        if HumanoidRootPart then pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end) end
+        LoadAndPrepareTrack()
+    end
+end)
+
+Player.CharacterRemoving:Connect(function()
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    WarnLabel.Visible = false
+end)
+
+if Heartbeat then
+    Heartbeat:Connect(function(deltaTime)
+        if not InvisEnabled or not Invis_Fixed then
+            if not InvisEnabled and Character then
+                for _, v in pairs(Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.Transparency == 0.5 then v.Transparency = 0 end
+                end
+            end
+            WarnLabel.Visible = false
+            return
+        end
+
+        if not Character or not Humanoid or not HumanoidRootPart or not Humanoid:IsDescendantOf(workspace) or Humanoid.Health <= 0 then
+            WarnLabel.Visible = false
+            return
+        end
+
+        WarnLabel.Visible = not Grounded()
+
+        local speed = 12
+        if Humanoid.MoveDirection.Magnitude > 0 then
+            local offset = Humanoid.MoveDirection * speed * deltaTime
+            if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+                HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + offset
+            end
+        end
+
+        local OldCFrame = HumanoidRootPart.CFrame
+        local OldCameraOffset = Humanoid.CameraOffset
+
+        local _, y = workspace.CurrentCamera.CFrame:ToOrientation()
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.CFrame.Position) * CFrame.fromOrientation(0, y, 0)
+            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+        end
+        Humanoid.CameraOffset = Vector3.new(0, 1.44, 0)
+
+        if Track then
+            local ok = pcall(function()
+                if not Track.IsPlaying then Track:Play() end
+                Track:AdjustSpeed(0)
+                Track.TimePosition = 0.3
+            end)
+            if not ok then LoadAndPrepareTrack() end
+        elseif Humanoid and Humanoid.Health > 0 then
+            LoadAndPrepareTrack()
+        end
+
+        if RenderStepped then RenderStepped:Wait() end
+
+        if Humanoid and Humanoid:IsDescendantOf(workspace) then
+            Humanoid.CameraOffset = OldCameraOffset
+        end
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = OldCFrame
+        end
+
+        if Track then pcall(function() Track:Stop() end) end
+
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            local LookVector = workspace.CurrentCamera.CFrame.LookVector
+            local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z)
+            if Horizontal.Magnitude > 0.1 then
+                local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal.Unit)
+                HumanoidRootPart.CFrame = TargetCFrame
+            end
+        end
+
+        if Character then
+            for _, v in pairs(Character:GetDescendants()) do
+                if v:IsA("BasePart") and v.Transparency ~= 1 then
+                    v.Transparency = 0.5
+                end
+            end
+        end
+    end)
+end
+
+_G.Invis_Enable = Invis_Enable
+_G.Invis_Disable = Invis_Disable
+_G.IsInvisEnabled = function() return InvisEnabled end
+
+local speedEnabled = false
+local speedAmount = 1
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if speedEnabled and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+        local moveDir = game.Players.LocalPlayer.Character.Humanoid.MoveDirection
+        
+        if moveDir.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + (moveDir * (speedAmount / 10))
+        end
+    end
+end)
+
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
 }
@@ -839,7 +1080,21 @@ meele:AddDropdown('AimPartDropdown', {
     end
 })
 
+local fovcam = false
+local fovcamam = 70
+local jumpenabled = false
+local jumpamount = 7.1
+
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
+
+plrsec:AddToggle('speed', { Text = 'CFrame Speed', Default = false, Callback = function(Value) speedEnabled = Value end })
+plrsec:AddSlider('speedamount', { Text = 'Speed Amount', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) if speedEnabled then speedAmount = Value end end })
+plrsec:AddToggle('fovcam', { Text = 'FOV Camera', Default = false, Callback = function(Value) fovcam = Value end })
+plrsec:AddSlider('fovcama', { Text = 'FOV Amount', Default = 70, Min = 0, Max = 120, Rounding = 2, Compact = false, Callback = function(Value) fovcamam = Value if fovcam then game:GetService("RunService").RenderStepped:Connect(function() camera.FieldOfView = fovcamam end) end end })
+plrsec:AddToggle('jump', { Text = 'Jump Height', Default = false, Callback = function(Value) jumpenabled = Value end })
+plrsec:AddSlider('jumpheight', { Text = 'Jump Height Amount', Default = 7.1, Min = 0, Max = 20, Rounding = 2, Compact = false, Callback = function(Value) jumpamount = Value if jumpenabled then if me.Character:FindFirstChild("Humanoid") then me.Character:FindFirstChild("Humanoid").UseJumpPower = false me.Character:FindFirstChild("Humanoid").JumpHeight = jumpamount end end end })
+plrsec:AddToggle('invisible', { Text = 'Invisible', Default = false, Callback = function(Value) functions.invisible = Value if Value then pcall(function() if _G and _G.Invis_Enable then _G.Invis_Enable() end end) else pcall(function() if _G and _G.Invis_Disable then _G.Invis_Disable() end end) end })
+	
 
 esp:AddToggle("vis1", {
 	Text = "Enabled ESP",
