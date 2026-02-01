@@ -118,8 +118,7 @@ local Settings = {
     maxDistance = 2000,
     bulletTracerEnabled = false,
     tracerColor = Color3.fromRGB(255, 0, 0),
-    showFOV = false,
-	sound= false
+    showFOV = false
 }
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/0Bt9P9z5"))()
@@ -1080,19 +1079,9 @@ meele:AddDropdown('AimPartDropdown', {
     end
 })
 
-local fovcam = false
-local fovcamam = 70
-local jumpenabled = false
-local jumpamount = 7.1
 
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
 
-plrsec:AddToggle('speed', { Text = 'CFrame Speed', Default = false, Callback = function(Value) speedEnabled = Value end })
-plrsec:AddSlider('speedamount', { Text = 'Speed Amount', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) if speedEnabled then speedAmount = Value end end })
-plrsec:AddToggle('fovcam', { Text = 'FOV Camera', Default = false, Callback = function(Value) fovcam = Value end })
-plrsec:AddSlider('fovcama', { Text = 'FOV Amount', Default = 70, Min = 0, Max = 120, Rounding = 2, Compact = false, Callback = function(Value) fovcamam = Value if fovcam then game:GetService("RunService").RenderStepped:Connect(function() camera.FieldOfView = fovcamam end) end end })
-plrsec:AddToggle('jump', { Text = 'Jump Height', Default = false, Callback = function(Value) jumpenabled = Value end })
-plrsec:AddSlider('jumpheight', { Text = 'Jump Height Amount', Default = 7.1, Min = 0, Max = 20, Rounding = 2, Compact = false, Callback = function(Value) jumpamount = Value if jumpenabled then if me.Character:FindFirstChild("Humanoid") then me.Character:FindFirstChild("Humanoid").UseJumpPower = false me.Character:FindFirstChild("Humanoid").JumpHeight = jumpamount end end end })
 plrsec:AddToggle('invisible', { Text = 'Invisible', Default = false, Callback = function(Value) functions.invisible = Value if Value then pcall(function() if _G and _G.Invis_Enable then _G.Invis_Enable() end end) else pcall(function() if _G and _G.Invis_Disable then _G.Invis_Disable() end end) end })
 	
 
