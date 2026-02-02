@@ -77,7 +77,7 @@ local aimbot = Tabs.main:AddRightGroupbox('Aimbot')
 local rage = Tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = Tabs.main:AddRightGroupbox("Meele Aura")
 local esp = Tabs.visuals:AddLeftGroupbox("Player Visuals")
-local plrsec = player:AddLeftGroupbox("Player Modifications")
+local plrsec = Tabs.player:AddLeftGroupbox("Player Modifications")
 
 remote1 = game:GetService("ReplicatedStorage").Events["XMHH.2"]
 remote2 = game:GetService("ReplicatedStorage").Events["XMHH2.2"]
