@@ -51,6 +51,53 @@ local SectionSettings = {
     }
 }
 
+local functions = {
+    SilentAim = false,
+    aimbot = false,
+    wall = false,
+    smooth = false,
+    smoothsize = 0.1,
+    randomtime = 1,
+    fovcolor = Color3.new(1, 1, 1), 
+    thickness = 1,
+    fovfilled = false,
+    aimpart = {"Head"},
+    fov = false,
+    fovsize = 100,
+    downed = false,
+    ff = false,
+    team = false,	
+	meleeauraF = false,
+	invisible = false,
+    RageBot = false
+}
+
+local Meele = {
+    Toggle = false,
+    Team = false,
+    Downed = false,
+    FF = false,
+    Anim = false,
+    Target = {"Head"},
+    Distance = 15
+}
+
+local Settings = {
+    checkDowned = false,
+    wallCheck = false,
+    hitlogEnabled = false,
+    checkWhitelist = false,
+    checkTarget = false,
+    useFOV = false,
+    teamCheck = false,
+    fovRadius = 75,
+    shootSpeed = 15,
+    fireInterval = 0.17,
+    maxDistance = 2000,
+    bulletTracerEnabled = false,
+    tracerColor = Color3.fromRGB(255, 0, 0),
+    showFOV = false
+}
 
 local vis = tabs.visuals:AddLeftGroupbox("Player Visuals")
 local silent = tabs.main:AddLeftGroupbox("Silent Aim")
