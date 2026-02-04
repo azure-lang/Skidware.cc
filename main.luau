@@ -28,6 +28,7 @@ local window = Library:CreateWindow({
 local tabs = {
     main = window:AddTab("Combat"),
     visuals = window:AddTab("Visuals"),
+	player = window:AddTab("Player"),
     settings = window:AddTab("Settings")
 }
 
@@ -79,7 +80,8 @@ local Meele = {
     FF = false,
     Anim = false,
     Target = {"Head"},
-    Distance = 15
+    Distance = 15,
+	Randomtime = 1
 }
 
 local Settings = {
@@ -108,6 +110,7 @@ local silent = tabs.main:AddLeftGroupbox("Silent Aim")
 local aimbot = tabs.main:AddRightGroupbox("Aimbot")
 local rage = tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = tabs.main:AddRightGroupbox("Meele Aura")
+local plrc = tabs.main:AddLeftGroupbox("Player Modifications")
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
 
@@ -554,6 +557,231 @@ end
 
 meeleconn = loop()
 
+local cloneref = cloneref or function(...) return ... end
+local Service = setmetatable({}, {
+    __index = function(_, k) return cloneref(game:GetService(k)) end
+})
+
+repeat task.wait() until game:IsLoaded()
+local Players = Service.Players
+local Player = Players and Players.LocalPlayer
+repeat task.wait() Player = Players and Players.LocalPlayer until Player
+
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid, HumanoidRootPart
+local function UpdateCharacterReferences()
+    Character = Player.Character
+    if Character then
+        HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+        Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    else
+        HumanoidRootPart = nil
+        Humanoid = nil
+    end
+end
+UpdateCharacterReferences()
+
+local Invis_Fixed = true
+local InvisEnabled = false
+local Track = nil
+local Animation = Instance.new("Animation")
+Animation.AnimationId = "rbxassetid://215384594"
+
+local RunService = Service.RunService
+local Heartbeat = RunService and RunService.Heartbeat
+local RenderStepped = RunService and RunService.RenderStepped
+local StarterGui = Service.StarterGui
+local CoreGui = Service.CoreGui
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "InvisWarningGUI"
+GUI.ResetOnSpawn = false
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.Parent = CoreGui
+
+local WarnLabel = Instance.new("TextLabel", GUI)
+WarnLabel.Text = "⚠️You are visible⚠️"
+WarnLabel.Visible = false
+WarnLabel.Size = UDim2.new(0, 200, 0, 30)
+WarnLabel.Position = UDim2.new(0.5, -100, 0.85, 0)
+WarnLabel.BackgroundTransparency = 1
+WarnLabel.Font = Enum.Font.GothamSemibold
+WarnLabel.TextSize = 24
+WarnLabel.TextColor3 = Color3.fromRGB(255,255,0)
+WarnLabel.TextStrokeTransparency = 0.5
+WarnLabel.ZIndex = 10
+
+local function Grounded()
+    return Humanoid and Humanoid:IsDescendantOf(workspace) and Humanoid.FloorMaterial ~= Enum.Material.Air
+end
+
+local function LoadAndPrepareTrack()
+    if Track then
+        pcall(function() Track:Stop() end)
+        Track = nil
+    end
+    if Humanoid then
+        local ok, res = pcall(function() return Humanoid:LoadAnimation(Animation) end)
+        if ok and res then
+            Track = res
+            Track.Priority = Enum.AnimationPriority.Action4
+        else
+            Track = nil
+        end
+    else
+        Track = nil
+    end
+end
+
+local function Invis_Disable()
+    if not InvisEnabled then return end
+    InvisEnabled = false
+    if Track then pcall(function() Track:Stop() end) end
+    if Humanoid then pcall(function() workspace.CurrentCamera.CameraSubject = Humanoid end) end
+    if Character then
+        for _, v in pairs(Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.Transparency == 0.5 then
+                v.Transparency = 0
+            end
+        end
+    end
+    WarnLabel.Visible = false
+end
+
+local function Invis_Enable()
+    if InvisEnabled or not Invis_Fixed then return end
+    UpdateCharacterReferences()
+    if not Character or not Humanoid or not HumanoidRootPart then return end
+    if not Character:FindFirstChild("Torso") then
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility FAILED", Text="Feature requires R6 Avatar.", Duration=5})
+        end)
+        return
+    end
+    InvisEnabled = true
+    pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end)
+    LoadAndPrepareTrack()
+end
+
+Player.CharacterAdded:Connect(function(newChar)
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    task.wait()
+    UpdateCharacterReferences()
+    if not Humanoid then
+        task.wait(0.5)
+        UpdateCharacterReferences()
+        if not Humanoid then
+            Invis_Fixed = false
+            if InvisEnabled then Invis_Disable() end
+            pcall(function()
+                StarterGui:SetCore("SendNotification", {Title="Invisibility Error", Text="Could not verify character type.", Duration=5})
+            end)
+            return
+        end
+    end
+    if Humanoid.RigType ~= Enum.HumanoidRigType.R6 then
+        Invis_Fixed = false
+        if InvisEnabled then Invis_Disable() end
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility Warning", Text="Non-R6 Avatar detected. Invisibility disabled.", Duration=5})
+        end)
+        return
+    else
+        Invis_Fixed = true
+    end
+    if InvisEnabled then
+        if HumanoidRootPart then pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end) end
+        LoadAndPrepareTrack()
+    end
+end)
+
+Player.CharacterRemoving:Connect(function()
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    WarnLabel.Visible = false
+end)
+
+if Heartbeat then
+    Heartbeat:Connect(function(deltaTime)
+        if not InvisEnabled or not Invis_Fixed then
+            if not InvisEnabled and Character then
+                for _, v in pairs(Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.Transparency == 0.5 then v.Transparency = 0 end
+                end
+            end
+            WarnLabel.Visible = false
+            return
+        end
+
+        if not Character or not Humanoid or not HumanoidRootPart or not Humanoid:IsDescendantOf(workspace) or Humanoid.Health <= 0 then
+            WarnLabel.Visible = false
+            return
+        end
+
+        WarnLabel.Visible = not Grounded()
+
+        local speed = 12
+        if Humanoid.MoveDirection.Magnitude > 0 then
+            local offset = Humanoid.MoveDirection * speed * deltaTime
+            if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+                HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + offset
+            end
+        end
+
+        local OldCFrame = HumanoidRootPart.CFrame
+        local OldCameraOffset = Humanoid.CameraOffset
+
+        local _, y = workspace.CurrentCamera.CFrame:ToOrientation()
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.CFrame.Position) * CFrame.fromOrientation(0, y, 0)
+            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+        end
+        Humanoid.CameraOffset = Vector3.new(0, 1.44, 0)
+
+        if Track then
+            local ok = pcall(function()
+                if not Track.IsPlaying then Track:Play() end
+                Track:AdjustSpeed(0)
+                Track.TimePosition = 0.3
+            end)
+            if not ok then LoadAndPrepareTrack() end
+        elseif Humanoid and Humanoid.Health > 0 then
+            LoadAndPrepareTrack()
+        end
+
+        if RenderStepped then RenderStepped:Wait() end
+
+        if Humanoid and Humanoid:IsDescendantOf(workspace) then
+            Humanoid.CameraOffset = OldCameraOffset
+        end
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = OldCFrame
+        end
+
+        if Track then pcall(function() Track:Stop() end) end
+
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            local LookVector = workspace.CurrentCamera.CFrame.LookVector
+            local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z)
+            if Horizontal.Magnitude > 0.1 then
+                local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal.Unit)
+                HumanoidRootPart.CFrame = TargetCFrame
+            end
+        end
+
+        if Character then
+            for _, v in pairs(Character:GetDescendants()) do
+                if v:IsA("BasePart") and v.Transparency ~= 1 then
+                    v.Transparency = 0.5
+                end
+            end
+        end
+    end)
+end
+
+_G.Invis_Enable = Invis_Enable
+_G.Invis_Disable = Invis_Disable
+_G.IsInvisEnabled = function() return InvisEnabled end
+
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
 }
@@ -587,9 +815,9 @@ local function runRandomLoop2()
     if random2Active then return end
     random2Active = true
     while random2Active do
-        local random2time = SectionSettings.MeeleAura.randomtime or 1
+        local random2time = Meele.Randomtime or 1
         local v3 = parts_list[math.random(1, #parts_list)]
-        SectionSettings.MeeleAura.targetparts = {v3}
+        Meele.Target = {v3}
         task.wait(random2time)
     end
 end
@@ -717,15 +945,33 @@ meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = 
 meele:AddToggle('meeledowned', { Text = 'Check Downed', Default = false, Callback = function(Value) Meele.Downed = Value end })
 
 meele:AddDropdown('AimPartDropdown', {
-    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg" },
+    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
     Default = 1, Multi = false, 
     Text = 'Aim Parts',
     Callback = function(Value)
-        Meele.Target = {Value}
+        if Value == "Random" then task.spawn(runRandomLoop2) else random2Active = false Meele.Target = {Value} end
     end
 })
 
+meele:AddSlider('meeletime', { Text = 'Random Time', Default = 15, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) Meele.Randomtime = Value end })
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
+
+plrc:AddToggle("inv", {
+    Text = "Invisible",
+    Default = false,
+    Disabled = false,
+    Visible = true,
+    Risky = false,
+
+    Callback = function(Value)
+        functions.invisible = Value
+        if Value then
+            pcall(function() if _G and _G.Invis_Enable then _G.Invis_Enable() end end)
+        else
+            pcall(function() if _G and _G.Invis_Disable then _G.Invis_Disable() end end)
+        end
+    end
+})
 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
