@@ -110,7 +110,7 @@ local silent = tabs.main:AddLeftGroupbox("Silent Aim")
 local aimbot = tabs.main:AddRightGroupbox("Aimbot")
 local rage = tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = tabs.main:AddRightGroupbox("Meele Aura")
-local plrc = tabs.main:AddLeftGroupbox("Player Modifications")
+local plrc = tabs.player:AddLeftGroupbox("Player Modifications")
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
 
@@ -927,7 +927,6 @@ rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback
 rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) Settings.checkDowned = Value end })
 rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
 rage:AddToggle('ragehitlog', { Text = 'Hit Log', Default = false, Callback = function(Value) Settings.hitlogEnabled = Value end })
-rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) Settings.sound = Value end })
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) Settings.bulletTracerEnabled = Value end })
 rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 2000, Rounding = 1, Compact = false, Callback = function(Value) Settings.maxDistance = Value end })
 rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Settings.shootSpeed = Value end })
@@ -953,9 +952,30 @@ meele:AddDropdown('AimPartDropdown', {
     end
 })
 
-meele:AddSlider('meeletime', { Text = 'Random Time', Default = 15, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) Meele.Randomtime = Value end })
+meele:AddSlider('meeletime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) Meele.Randomtime = Value end })
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
 
+local speedEnabled = false
+local speedAmount = 1
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    if speedEnabled and game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = game.Players.LocalPlayer.Character.HumanoidRootPart
+        local moveDir = game.Players.LocalPlayer.Character.Humanoid.MoveDirection
+        
+        if moveDir.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + (moveDir * (speedAmount / 10))
+        end
+    end
+end)
+
+local fovenabled = false
+local fovamount = 70
+
+plrc:AddToggle('walkspeed', { Text = 'CFrame Speed', Default = false, Callback = function(Value) speedEnabled = Value end })
+plrc:AddSlider('walkspeedamount', { Text = 'CFrame Speed Amount', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) if speedEnabled then speedAmount = Value end end })
+plrc:AddToggle('fovcamera', { Text = 'FOV Camera', Default = false, Callback = function(Value) fovenabled = Value end }
+plrc:AddSlider('fovcameraamount', { Text = 'FOV Camera Amount', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) fovamount = Value if fovenabled then run.RenderStepped:Connect(function() camera.FieldOfView = fovamount end) end end })
 plrc:AddToggle("inv", {
     Text = "Invisible",
     Default = false,
