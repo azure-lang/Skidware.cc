@@ -47,9 +47,9 @@ local meele = tabs.main:AddRightGroupbox("Meele Aura")
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
 
-local Events = ReplicatedStorage:WaitForChild("Events")
-local GNX_S = Events:WaitForChild("GNX_S")
-local ZFKLF__H = Events:WaitForChild("ZFKLF__H")
+local Events = ReplicatedStorage:FindFirstChild("Events")
+local GNX_S = Events:FindFirstChild("GNX_S")
+local ZFKLF__H = Events:FindFirstChild("ZFKLF__H")
 
 local WallbangSamples = 72
 local WallbangRadius = 10
