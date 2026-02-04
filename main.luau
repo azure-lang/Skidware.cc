@@ -111,6 +111,7 @@ local aimbot = tabs.main:AddRightGroupbox("Aimbot")
 local rage = tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = tabs.main:AddRightGroupbox("Meele Aura")
 local plrc = tabs.player:AddLeftGroupbox("Player Modifications")
+local viss = tabs.visuals:AddRightGroupbox("Player Visuals Settings")
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
 
@@ -823,15 +824,42 @@ local function runRandomLoop2()
 end
 
 vis:AddToggle('vis1', { Text = 'Enabled', Default = false, Callback = function(Value) ESP.ESP_Enabled = Value end })
-vis:AddToggle('vis2', { Text = 'Show Box', Default = false, Callback = function(Value) ESP.Box = Value end })
-vis:AddToggle('vis3', { Text = 'Show Name', Default = false, Callback = function(Value) ESP.Name = Value end })
-vis:AddToggle('vis4', { Text = 'Show Tool', Default = false, Callback = function(Value) ESP.Tool = Value end })
-vis:AddToggle('vis5', { Text = 'Show Distance', Default = false, Callback = function(Value) ESP.Distance = Value end })
-vis:AddToggle('vis6', { Text = 'Show Health Text', Default = false, Callback = function(Value) ESP.HealthText = Value end })
-vis:AddToggle('vis7', { Text = 'Show Health Bar', Default = false, Callback = function(Value) ESP.HealthBar = Value end })
-vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) ESP.Chams = Value end })
-vis:AddToggle('vis9', { Text = 'Show Head Dot', Default = false, Callback = function(Value) ESP.Headdot = Value end })
-vis:AddToggle('vis10', { Text = 'Show Skeletons', Default = false, Callback = function(Value) ESP.Skeleton = Value end })
+vis:AddToggle('vis2', { Text = 'Show Box', Default = false, Callback = function(Value) ESP.Box = Value end }):AddColorPicker('box color', {
+    Default = Color3.new(1, 1, 1), Title = 'Box Color', Transparency = 0,
+    Callback = function(Value) ESP.Box_Color = Value end
+})
+vis:AddToggle('vis3', { Text = 'Show Name', Default = false, Callback = function(Value) ESP.Name = Value end }):AddColorPicker('name color', {
+    Default = Color3.new(1, 1, 1), Title = 'Name Color', Transparency = 0,
+    Callback = function(Value) ESP.Name_Color = Value end
+})
+vis:AddToggle('vis4', { Text = 'Show Tool', Default = false, Callback = function(Value) ESP.Tool = Value end }):AddColorPicker('tool color', {
+    Default = Color3.new(1, 1, 1), Title = 'Tool Color', Transparency = 0,
+    Callback = function(Value) ESP.Tool_Color = Value end
+})
+vis:AddToggle('vis5', { Text = 'Show Distance', Default = false, Callback = function(Value) ESP.Distance = Value end }):AddColorPicker('distance color', {
+    Default = Color3.new(1, 1, 1), Title = 'Distance Color', Transparency = 0,
+    Callback = function(Value) ESP.Distance_Color = Value end
+})
+vis:AddToggle('vis6', { Text = 'Show Health Text', Default = false, Callback = function(Value) ESP.HealthText = Value end }):AddColorPicker('healtht color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Text Color', Transparency = 0,
+    Callback = function(Value) ESP.HealthText_Color = Value end
+})
+vis:AddToggle('vis7', { Text = 'Show Health Bar', Default = false, Callback = function(Value) ESP.HealthBar = Value end }):AddColorPicker('healthb color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Bar Color', Transparency = 0,
+    Callback = function(Value) ESP.HealthBar_Color = Value end
+})
+vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) ESP.Chams = Value end }):AddColorPicker('chams color', {
+    Default = Color3.new(1, 1, 1), Title = 'Chams Color', Transparency = 0,
+    Callback = function(Value) ESP.Chams_Color = Value end
+})
+vis:AddToggle('vis9', { Text = 'Show Head Dot', Default = false, Callback = function(Value) ESP.Headdot = Value end }):AddColorPicker('headdot color', {
+    Default = Color3.new(1, 1, 1), Title = 'Head Dot Color', Transparency = 0,
+    Callback = function(Value) ESP.Headdot_Color = Value end
+})
+vis:AddToggle('vis10', { Text = 'Show Skeletons', Default = false, Callback = function(Value) ESP.Skeleton = Value end }):AddColorPicker('skeleton color', {
+    Default = Color3.new(1, 1, 1), Title = 'Skeletons Color', Transparency = 0,
+    Callback = function(Value) ESP.Skeleton_Color = Value end
+})
 
 silent:AddToggle('v1', {
     Text = 'Toggle',
