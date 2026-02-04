@@ -99,6 +99,10 @@ local Settings = {
     showFOV = false
 }
 
+local cockie = {
+    SilentAimCircle = nil
+}
+
 local vis = tabs.visuals:AddLeftGroupbox("Player Visuals")
 local silent = tabs.main:AddLeftGroupbox("Silent Aim")
 local aimbot = tabs.main:AddRightGroupbox("Aimbot")
