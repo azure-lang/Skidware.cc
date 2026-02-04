@@ -650,6 +650,83 @@ silent:AddToggle('v5', { Text = 'Filled', Default = false, Callback = function(V
 silent:AddSlider('fov size', { Text = 'FOV Size', Default = 100, Min = 0, Max = 500, Rounding = 1, Compact = false, Callback = function(Value) SectionSettings.SilentAim.DrawSize = Value end })
 silent:AddSlider('thickness', { Text = 'Thickness', Default = 1, Min = 0, Max = 10, Rounding = 1, Compact = false, Callback = function(Value) SectionSettings.SilentAim.Thickness = Value end })
 
+
+aimbot:AddToggle('aimbot', {
+    Text = 'Toggle', Default = false,
+    Callback = function(Value) functions.aimbot = Value end
+}):AddKeyPicker("aimbotkey", {
+    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Aimbot Key", NoUI = false,
+})
+
+aimbot:AddToggle('aimbotteam', { Text = 'Check Team', Default = false, Callback = function(Value) functions.team = Value end })
+aimbot:AddToggle('aimbotwall', { Text = 'Check Wall', Default = false, Callback = function(Value) functions.wall = Value end })
+aimbot:AddToggle('aimbotdowned', { Text = 'Check Downed', Default = false, Callback = function(Value) functions.downed = Value end })
+aimbot:AddToggle('aimbotff', { Text = 'Check Force Field', Default = false, Callback = function(Value) functions.ff = Value end })
+
+aimbot:AddDropdown('AimPartDropdown1', {
+    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
+    Default = 1, Multi = false, Text = 'Aim Parts',
+    Callback = function(Value)
+        if Value == "Random" then task.spawn(runRandomLoop1) else random1Active = false functions.aimpart = {Value} end
+    end
+})
+
+aimbot:AddSlider('aimbotrand', {
+    Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) functions.randomtime = Value end
+})
+
+aimbot:AddToggle('aimbotsmooth_t', { Text = 'Smooth', Default = false, Callback = function(Value) functions.smooth = Value end })
+aimbot:AddSlider('aimbotsmooth_s', { Text = 'Smooth Amount', Default = 0.1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) functions.smoothsize = Value end })
+
+aimbot:AddToggle('aimbotfov_t', {
+    Text = 'FOV Circle', Default = false,
+    Callback = function(Value) functions.fov = Value end
+}):AddColorPicker('fov color aim', {
+    Default = Color3.new(1, 1, 1), Title = 'FOV Color', Transparency = 0,
+    Callback = function(Value) functions.fovcolor = Value end
+})
+
+aimbot:AddToggle('aimbotfov_f', { Text = 'Filled', Default = false, Callback = function(Value) functions.fovfilled = Value end })
+aimbot:AddSlider('aimbotfov_s', { Text = 'FOV Size', Default = 100, Min = 0, Max = 500, Rounding = 2, Compact = false, Callback = function(Value) functions.fovsize = Value end })
+aimbot:AddSlider('aimbotfov_y', { Text = 'Thickness', Default = 1, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) functions.thickness = Value end })
+
+rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) functions.RageBot = Value end }):AddKeyPicker("ragekey", {
+    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Rage Bot Key", NoUI = false,
+})
+rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
+rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) Settings.checkWall = Value end })
+rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) Settings.checkDowned = Value end })
+rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
+rage:AddToggle('ragehitlog', { Text = 'Hit Log', Default = false, Callback = function(Value) Settings.hitlogEnabled = Value end })
+rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) Settings.sound = Value end })
+rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) Settings.bulletTracerEnabled = Value end })
+rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 2000, Rounding = 1, Compact = false, Callback = function(Value) Settings.maxDistance = Value end })
+rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Settings.shootSpeed = Value end })
+rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) Settings.fireInterval = Value end })
+
+meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) 
+		Meele.Toggle = Value
+	end
+}):AddKeyPicker("meelkey", {
+    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Meele Aura Key", NoUI = false,
+})
+
+meele:AddToggle('meeleshowanim', { Text = 'Show Animation', Default = false, Callback = function(Value) Meele.Anim = Value end })
+meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = function(Value) Meele.Team = Value end })
+meele:AddToggle('meeledowned', { Text = 'Check Downed', Default = false, Callback = function(Value) Meele.Downed = Value end })
+
+meele:AddDropdown('AimPartDropdown', {
+    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg" },
+    Default = 1, Multi = false, 
+    Text = 'Aim Parts',
+    Callback = function(Value)
+        Meele.Target = {Value}
+    end
+})
+
+meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
+
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
 SaveManager:IgnoreThemeSettings()
