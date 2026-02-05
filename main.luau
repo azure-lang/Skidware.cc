@@ -861,6 +861,36 @@ vis:AddToggle('vis10', { Text = 'Show Skeletons', Default = false, Callback = fu
     Callback = function(Value) ESP.Skeleton_Color = Value end
 })
 
+viss:AddToggle('vis11', { Text = 'Box Filled', Default = false, Callback = function(Value) ESP.Box_Filled = Value end }):AddColorPicker('box fill color', {
+    Default = Color3.new(1, 1, 1), Title = 'Box Fill Color', Transparency = 0,
+    Callback = function(Value) ESP.Box_Fill_Color = Value end
+})
+viss:AddSlider('box fill trans', {
+    Text = 'Box Fill Transparency', Default = 0.5, Min = 0, Max = 1, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Box_Fill_Transparency = Value end
+})
+viss:AddSlider('box thickness', {
+    Text = 'Box Thickness', Default = 1, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Box_Thickness = Value end
+})
+viss:AddSlider('headdot thickness', {
+    Text = 'Head Dot Thickness', Default = 1, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Headdot_Thickness = Value end
+})
+viss:AddToggle('headdot outline', { Text = 'Head Dot Outline', Default = false, Callback = function(Value) ESP.Headdot_Outline = Value end })
+viss:AddToggle('name outline', { Text = 'Name Outline', Default = false, Callback = function(Value) ESP.Name_Outline = Value end })
+viss:AddToggle('tool outline', { Text = 'Tool Outline', Default = false, Callback = function(Value) ESP.Tool_Outline = Value end })
+viss:AddToggle('dist outline', { Text = 'Distance Outline', Default = false, Callback = function(Value) ESP.Distance_Outline = Value end })
+viss:AddToggle('healtht outline', { Text = 'Health Text Outline', Default = false, Callback = function(Value) ESP.HealthText_Outline = Value end })
+viss:AddSlider('skeleton thickness', {
+    Text = 'Skeleton Thickness', Default = 1.5, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Skeleton_Thickness = Value end
+})
+viss:AddSlider('tracer thickness', {
+    Text = 'Tracer Thickness', Default = 1, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Tracer_Thickness = Value end
+})
+
 silent:AddToggle('v1', {
     Text = 'Toggle',
     Default = false,
