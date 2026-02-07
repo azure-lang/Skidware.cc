@@ -856,7 +856,7 @@ vis:AddToggle('vis9', { Text = 'Show Head Dot', Default = false, Callback = func
 vis:AddToggle('vis10', { Text = 'Show Skeletons', Default = false, Callback = function(Value) ESP.Skeleton = Value end })
 vis:AddToggle('vis12', { Text = 'Show Tracer', Default = false, Callback = function(Value) ESP.Tracer = Value end }):AddColorPicker('tracer color', {
     Default = Color3.new(1, 1, 1), Title = 'Tracer Color', Transparency = 0,
-    Callback = function(Value) ESP.Skeleton_Color = Value end
+    Callback = function(Value) ESP.Tracer_Color = Value end
 })
 
 viss:AddToggle('vis11', { Text = 'Box Filled', Default = false, Callback = function(Value) ESP.Box_Filled = Value end }):AddColorPicker('box fill color', {
