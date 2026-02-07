@@ -940,14 +940,14 @@ visw:AddToggle('safeesp', { Text = 'Safe ESP', Default = false, Callback = funct
                                     txt.BackgroundTransparency = 1
                                     txt.TextColor3 = Color3.fromRGB(0, 255, 0)
                                     txt.Text = obj.Name
-									txt.Outline = true
+									txt.TextStrokeTransparency = 0
                                     local hp = Instance.new("TextLabel", bg)
                                     hp.Name = "health"
                                     hp.Size = UDim2.new(1,0,0.3,0)
                                     hp.Position = UDim2.new(0,0,0,17)
                                     hp.BackgroundTransparency = 1
                                     hp.TextColor3 = Color3.fromRGB(0, 255, 0)
-									hp.Outline = true
+									hp.TextStrokeTransparency = 0
 
                                     if obj:FindFirstChild("Values") and obj.Values:FindFirstChild("Broken") then
                                         if obj.Values.Broken.Value then
