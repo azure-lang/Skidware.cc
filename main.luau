@@ -184,7 +184,7 @@ local function SetupSilentAim()
 
     RunService.RenderStepped:Connect(function()
         if cockie.SilentAimCircle then
-            local pos = UserInputService:GetMouseLocation()
+            local pos = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
             cockie.SilentAimCircle.Visible = functions.SilentAim and SectionSettings.SilentAim.ShowFOV
             cockie.SilentAimCircle.Radius = SectionSettings.SilentAim.DrawSize
             cockie.SilentAimCircle.Thickness = SectionSettings.SilentAim.Thickness
@@ -232,7 +232,7 @@ fovCircle.Filled = false
 fovCircle.Visible = false
 
 run.RenderStepped:Connect(function()
-    local pos = UserInputService:GetMouseLocation()
+    local pos = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
     fovCircle.Visible = functions.fov
     fovCircle.Radius = functions.fovsize
     fovCircle.Color = functions.fovcolor
