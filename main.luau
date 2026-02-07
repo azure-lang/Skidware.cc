@@ -11,18 +11,14 @@ local Camera = Workspace.CurrentCamera
 local camera = Workspace.CurrentCamera
 local run = game:GetService("RunService")
 
-local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+local repo = 'https://raw.githubusercontent.com/deividcomsono/Obsidian/main/'
 
 local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
 local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
 local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
 
 local window = Library:CreateWindow({
-    Title = "Skidware.cc",
-    Center = true,
-    AutoShow = true,
-    TabPadding = 8,
-    MenuFadeTime = 0.2
+    Title = "Skidware.cc"
 })
 
 local tabs = {
@@ -1027,33 +1023,6 @@ plrc:AddToggle("inv", {
         end
     end
 })
-
-Library:SetWatermarkVisibility(true)
-local FrameTimer = tick()
-local FrameCounter = 0;
-local FPS = 60;
-
-local WatermarkConnection = RunService.RenderStepped:Connect(function()
-    FrameCounter += 1;
-
-    if (tick() - FrameTimer) >= 1 then
-        FPS = FrameCounter;
-        FrameTimer = tick();
-        FrameCounter = 0;
-    end;
-
-    Library:SetWatermark(('Skidware.cc | Criminality | %s fps | %s ms'):format(
-        math.floor(FPS),
-        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
-    ));
-end);
-
-Library.KeybindFrame.Visible = false; 
-
-Library:OnUnload(function()
-    WatermarkConnection:Disconnect()
-    Library.Unloaded = true
-end)
 
 local MenuGroup = tabs.settings:AddLeftGroupbox('Menu')
 MenuGroup:AddButton('Unload', function() Library:Unload() end)
