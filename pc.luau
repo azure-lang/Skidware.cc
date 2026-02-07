@@ -947,7 +947,7 @@ visw:AddToggle('safeesp', { Text = 'Safe ESP', Default = false, Callback = funct
                                     hp.Position = UDim2.new(0,0,0,17)
                                     hp.BackgroundTransparency = 1
                                     hp.TextColor3 = Color3.fromRGB(0, 255, 0)
-									hp.Outline = trueç
+									hp.Outline = true
 
                                     if obj:FindFirstChild("Values") and obj.Values:FindFirstChild("Broken") then
                                         if obj.Values.Broken.Value then
