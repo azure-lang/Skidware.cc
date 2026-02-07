@@ -848,7 +848,7 @@ vis:AddToggle('vis7', { Text = 'Show Health Bar', Default = false, Callback = fu
     Default = Color3.new(1, 1, 1), Title = 'Health Bar Color', Transparency = 0,
     Callback = function(Value) ESP.HealthBar_Color = Value end
 })
-vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) ESP.Chams = Value end }):AddColorPicke
+vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) ESP.Chams = Value end })
 vis:AddToggle('vis9', { Text = 'Show Head Dot', Default = false, Callback = function(Value) ESP.Headdot = Value end }):AddColorPicker('headdot color', {
     Default = Color3.new(1, 1, 1), Title = 'Head Dot Color', Transparency = 0,
     Callback = function(Value) ESP.Headdot_Color = Value end
