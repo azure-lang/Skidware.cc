@@ -265,16 +265,17 @@ local rep = game:GetService("ReplicatedStorage")
 local events = rep:WaitForChild("Events")
 
 local settings = {
-    ragebot = true,
+    ragebot = false,
     checkdowned = false,
     checkteam = false,
     checkwall = false,
     distance = 1000,
     fireinterval = 0.1,
     shootspeed = 1,
-    hitlog = true,
+    hitlog = false,
+	sound = false,
     CheckWhiteList = false,
-    bulletTracerEnabled = true,
+    bulletTracerEnabled = false,
     tracerColor = Color3.new(1, 1, 1)
 }
 
@@ -294,19 +295,12 @@ end
 
 local function SendHitLog(targetName, bodyPart, distance)
     if not settings.hitlog then return end
-    local message = string.format("Alvo: %s | Local: %s | Dist: %.1f studs", targetName, bodyPart, distance)
-    if Library and Library.Notify then
-        Library:Notify(message, 3)
-    else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "Hit Log",
-            Text = message,
-            Duration = 3
-        })
-    end
+    local message = string.format("Hit %s on %s, %.1f studs", targetName, bodyPart, distance)
+    Library:Notify(message, 4)
 end
 
 local function createSound()
+	if not settings.sound then return end
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://7136858729"
     sound.Volume = 2
