@@ -1130,6 +1130,8 @@ meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max
 
 local fovcamera = false
 local fovcameraamount = 70
+local cframespeed = false
+local cframespeedamount = 1
 
 plrc:AddToggle("fovcamera", {
     Text = "Field Of View",
@@ -1157,10 +1159,43 @@ plrc:AddSlider('fovcameraamount', {
     end 
 })
 
+plrc:AddToggle("cframespeed", {
+    Text = "CFrame Speed",
+    Default = false,
+    Disabled = false,
+    Visible = true,
+    Risky = false,
+    Callback = function(Value)
+        cframespeed = Value
+    end
+})
+
+plrc:AddSlider('cframespeedamount', { 
+    Text = 'CFrame Speed Amount', 
+    Default = 1, 
+    Min = 0, 
+    Max = 5, 
+    Rounding = 2, 
+    Compact = false, 
+    Callback = function(Value) 
+        cframespeedamount = Value 
+    end
+})
+
 run.RenderStepped:Connect(function()
     if fovcamera then
         camera.FieldOfView = fovcameraamount
     end
+end)
+
+run.Heartbeat:Connect(function()
+	if cframespeed and me.Character and me.Character:FindFirstChild('Humanoid') and me.Character:FindFirstChild('HumanoidRootPart') then
+		local hum = me.Character.Humanoid
+		local hrp = me.Character.HumanoidRootPart
+		if hum.MoveDirection.Magnitude > 0 then
+			hrp.CFrame = hrp.CFrame + (hum.MoveDirection * cframespeedamount)
+		end
+	end
 end)
 
 plrc:AddToggle("inv", {
