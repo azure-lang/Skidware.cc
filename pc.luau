@@ -1137,13 +1137,31 @@ plrc:AddToggle("fovcamera", {
     Disabled = false,
     Visible = true,
     Risky = false,
-
     Callback = function(Value)
         fovcamera = Value
+        if not Value then
+            camera.FieldOfView = 70
+        end
     end
 })
 
-plrc:AddSlider('fovcameraamount', { Text = 'Field Of View Amount', Default = 70, Min = 0, Max = 120, Rounding = 2, Compact = false, Callback = function(Value) fovcameraamount = Value if fovcamera then run.RenderStepped:Connect(function() camera.FieldOfView = Value end) end })
+plrc:AddSlider('fovcameraamount', { 
+    Text = 'Field Of View Amount', 
+    Default = 70, 
+    Min = 0, 
+    Max = 120, 
+    Rounding = 2, 
+    Compact = false, 
+    Callback = function(Value) 
+        fovcameraamount = Value 
+    end 
+})
+
+run.RenderStepped:Connect(function()
+    if fovcamera then
+        camera.FieldOfView = fovcameraamount
+    end
+end)
 
 plrc:AddToggle("inv", {
     Text = "Invisible",
