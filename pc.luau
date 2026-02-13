@@ -280,6 +280,9 @@ local settings = {
 
 local lastshottime = 0
 local whitelist = {}
+local WallbangSamples = 72
+local WallbangRadius = 10
+local WallbangHeight = 6
 
 local function RandomString(length)
     local res = ""
@@ -291,10 +294,16 @@ end
 
 local function SendHitLog(targetName, bodyPart, distance)
     if not settings.hitlog then return end
-    
-    local message = string.format("Hit %s on %s, %.1f studs", targetName, bodyPart, distance)
-    
-    Library:Notify(message, 3)
+    local message = string.format("Alvo: %s | Local: %s | Dist: %.1f studs", targetName, bodyPart, distance)
+    if Library and Library.Notify then
+        Library:Notify(message, 3)
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "Hit Log",
+            Text = message,
+            Duration = 3
+        })
+    end
 end
 
 local function createSound()
@@ -338,30 +347,59 @@ local function createTracer(startPos, endPos)
     end)
 end
 
+local function MakeRaycastParams()
+    local rp = RaycastParams.new()
+    rp.FilterType = Enum.RaycastFilterType.Exclude
+    rp.FilterDescendantsInstances = {me.Character, camera}
+    rp.IgnoreWater = true
+    return rp
+end
+
+local function FindWallbangPoint(origin, targetPart)
+    if not origin or not targetPart then return nil end
+    local base = targetPart.Position
+    local rp = MakeRaycastParams()
+    for i = 1, WallbangSamples do
+        local angle = (i / WallbangSamples) * math.pi * 2
+        local r = WallbangRadius * (0.6 + math.random() * 0.8)
+        local yOff = (math.random() * 2 - 1) * WallbangHeight
+        local offset = Vector3.new(math.cos(angle) * r, yOff, math.sin(angle) * r)
+        local testPoint = base + offset
+        local dir = (testPoint - origin)
+        if dir.Magnitude > 0 then
+            local result = workspace:Raycast(origin, dir, rp)
+            if result then
+                if result.Instance and result.Instance:IsDescendantOf(targetPart.Parent) then
+                    return testPoint
+                else
+                    local distHitToTarget = (result.Position - base).Magnitude
+                    if distHitToTarget <= 2.0 then
+                        return testPoint
+                    end
+                end
+            else
+                return testPoint
+            end
+        end
+    end
+    return nil
+end
+
 local function GetClosestEnemy()
     if not me.Character or not me.Character:FindFirstChild("HumanoidRootPart") then return nil end
-    local closestEnemy = nil
-    local shortestDistance = settings.distance
+    local closestEnemy, shortestDistance = nil, settings.distance
+    local myRootPos = me.Character.HumanoidRootPart.Position
     for _, player in pairs(plrs:GetPlayers()) do
-        if player == me then continue end
-        if settings.checkteam and player.Team == me.Team then continue end
+        if player == me or (settings.checkteam and player.Team == me.Team) then continue end
         local character = player.Character
         if not character or not character:FindFirstChild("Humanoid") then continue end
         if settings.checkdowned and character.Humanoid.Health <= 15 then continue end
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
         local rootPart = character:FindFirstChild("HumanoidRootPart")
         local head = character:FindFirstChild("Head")
-        if rootPart and head and humanoid and humanoid.Health > 15 and not character:FindFirstChildOfClass("ForceField") then
+        if rootPart and head and character:FindFirstChildOfClass("Humanoid").Health > 15 then
             if settings.CheckWhiteList and table.find(whitelist, player) then continue end
-            local distance = (rootPart.Position - me.Character.HumanoidRootPart.Position).Magnitude
+            local distance = (rootPart.Position - myRootPos).Magnitude
             if distance < shortestDistance then
-                if settings.checkwall then
-                    local rayParams = RaycastParams.new()
-                    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-                    rayParams.FilterDescendantsInstances = {me.Character, camera}
-                    local ray = workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * distance, rayParams)
-                    if ray and not ray.Instance:IsDescendantOf(character) then continue end
-                end
                 shortestDistance = distance
                 closestEnemy = player
             end
@@ -381,20 +419,37 @@ local function Shoot(target)
     local ammo = values and values:FindFirstChild("SERVER_Ammo")
     if not ammo or ammo.Value <= 0 then return end
 
-    local hitPosition = head.Position
     local originPos = camera.CFrame.Position
-    local hitDirection = (hitPosition - originPos).Unit
+    local aimPos = head.Position
+    local rp = MakeRaycastParams()
+    local ray = workspace:Raycast(originPos, (aimPos - originPos), rp)
+    local los = (not ray) or (ray.Instance and ray.Instance:IsDescendantOf(target.Character))
+
+    local chosenPoint = aimPos
+    local wallbangFound = false
+
+    if not los then
+        local found = FindWallbangPoint(originPos, head)
+        if found then
+            chosenPoint = found
+            wallbangFound = true
+        end
+    end
+
+    if not los and settings.checkwall and not wallbangFound then return end
+
+    local hitDirection = (chosenPoint - originPos).Unit
     local randomKey = RandomString(30) .. "0"
-    local distance = (myRoot.Position - head.Position).Magnitude
+    local distToPlayer = (myRoot.Position - head.Position).Magnitude
 
     createSound()
-    createTracer(originPos, hitPosition)
-    SendHitLog(target.Name, head.Name, distance)
+    createTracer(originPos, chosenPoint)
+    SendHitLog(target.Name, head.Name, distToPlayer)
 
     events.GNX_S:FireServer(tick(), randomKey, tool, "FDS9I83", originPos, {hitDirection}, false)
 
     task.delay(0.00001, function()
-        events["ZFKLF__H"]:FireServer("🧈", tool, randomKey, 1, head, hitPosition, hitDirection)
+        events["ZFKLF__H"]:FireServer("🧈", tool, randomKey, 1, head, chosenPoint, hitDirection)
         ammo.Value = math.max(ammo.Value - 1, 0)
         local hitMarker = tool:FindFirstChild("Hitmarker") or tool:FindFirstChild("HitMarker")
         if hitMarker then hitMarker:Fire(head) end
