@@ -302,7 +302,7 @@ end
 local function createSound()
 	if not settings.sound then return end
     local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://7136858729"
+    sound.SoundId = "rbxassetid://92570611018210"
     sound.Volume = 2
     sound.Parent = camera
     sound:Play()
