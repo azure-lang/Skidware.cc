@@ -265,18 +265,21 @@ local rep = game:GetService("ReplicatedStorage")
 local events = rep:WaitForChild("Events")
 
 local settings = {
-    ragebot = false,
+    ragebot = true,
     checkdowned = false,
     checkteam = false,
     checkwall = false,
     distance = 1000,
     fireinterval = 0.1,
     shootspeed = 1,
+    hitlog = true,
     CheckWhiteList = false,
-    bulletTracerEnabled = false
+    bulletTracerEnabled = true,
+    tracerColor = Color3.new(1, 1, 1)
 }
 
 local lastshottime = 0
+local whitelist = {}
 
 local function RandomString(length)
     local res = ""
@@ -284,6 +287,14 @@ local function RandomString(length)
         res = res .. string.char(math.random(97, 122))
     end
     return res
+end
+
+local function SendHitLog(targetName, bodyPart, distance)
+    if not settings.hitlog then return end
+    
+    local message = string.format("Hit %s on %s, %.1f studs", targetName, bodyPart, distance)
+    
+    Library:Notify(message, 3)
 end
 
 local function createSound()
@@ -299,15 +310,12 @@ end
 
 local function createTracer(startPos, endPos)
     if not settings.bulletTracerEnabled then return end
-    
-    local attachment0 = Instance.new("Attachment")
-    attachment0.WorldPosition = startPos
-    attachment0.Parent = workspace.Terrain
-
-    local attachment1 = Instance.new("Attachment")
-    attachment1.WorldPosition = endPos
-    attachment1.Parent = workspace.Terrain
-
+    local att0 = Instance.new("Attachment")
+    att0.WorldPosition = startPos
+    att0.Parent = workspace.Terrain
+    local att1 = Instance.new("Attachment")
+    att1.WorldPosition = endPos
+    att1.Parent = workspace.Terrain
     local beam = Instance.new("Beam")
     beam.Texture = "rbxassetid://7136858729"
     beam.TextureMode = Enum.TextureMode.Stretch
@@ -315,64 +323,45 @@ local function createTracer(startPos, endPos)
     beam.LightInfluence = 0
     beam.Width0 = 0.8
     beam.Width1 = 0.8
-    beam.Attachment0 = attachment0
-    beam.Attachment1 = attachment1
-    beam.Color = ColorSequence.new(Color3.new(1, 1, 1))
+    beam.Attachment0 = att0
+    beam.Attachment1 = att1
+    beam.Color = ColorSequence.new(settings.tracerColor)
     beam.Parent = workspace.Terrain
-
     task.spawn(function()
         for t = 0, 1, 0.05 do
-            if beam and beam.Parent then
-                beam.Transparency = NumberSequence.new(t)
-            end
+            if beam and beam.Parent then beam.Transparency = NumberSequence.new(t) end
             task.wait(0.03)
         end
         if beam then beam:Destroy() end
-        if attachment0 then attachment0:Destroy() end
-        if attachment1 then attachment1:Destroy() end
+        if att0 then att0:Destroy() end
+        if att1 then att1:Destroy() end
     end)
 end
 
 local function GetClosestEnemy()
-    if not me.Character or not me.Character:FindFirstChild("HumanoidRootPart") then 
-        return nil 
-    end
-
+    if not me.Character or not me.Character:FindFirstChild("HumanoidRootPart") then return nil end
     local closestEnemy = nil
-    local shortestDistance = settings.distance or 100 
-
+    local shortestDistance = settings.distance
     for _, player in pairs(plrs:GetPlayers()) do
         if player == me then continue end
         if settings.checkteam and player.Team == me.Team then continue end
-        
         local character = player.Character
         if not character or not character:FindFirstChild("Humanoid") then continue end
         if settings.checkdowned and character.Humanoid.Health <= 15 then continue end
-
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         local rootPart = character:FindFirstChild("HumanoidRootPart")
         local head = character:FindFirstChild("Head")
-
-        if character and rootPart and head and humanoid and humanoid.Health > 15 and not character:FindFirstChildOfClass("ForceField") then
-            if settings.CheckWhiteList and table.find(shared.WhiteList or {}, player) then
-                continue
-            end
-
+        if rootPart and head and humanoid and humanoid.Health > 15 and not character:FindFirstChildOfClass("ForceField") then
+            if settings.CheckWhiteList and table.find(whitelist, player) then continue end
             local distance = (rootPart.Position - me.Character.HumanoidRootPart.Position).Magnitude
             if distance < shortestDistance then
-                
                 if settings.checkwall then
                     local rayParams = RaycastParams.new()
                     rayParams.FilterType = Enum.RaycastFilterType.Exclude
                     rayParams.FilterDescendantsInstances = {me.Character, camera}
-                    
                     local ray = workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * distance, rayParams)
-                    
-                    if ray and not ray.Instance:IsDescendantOf(character) then
-                        continue
-                    end
+                    if ray and not ray.Instance:IsDescendantOf(character) then continue end
                 end
-
                 shortestDistance = distance
                 closestEnemy = player
             end
@@ -383,75 +372,44 @@ end
 
 local function Shoot(target)
     if not target or not target.Character then return end
-
     local head = target.Character:FindFirstChild("Head")
-    if not head then return end
-
-    local tool = me.Character and me.Character:FindFirstChildOfClass("Tool")
+    local myRoot = me.Character:FindFirstChild("HumanoidRootPart")
+    if not head or not myRoot then return end
+    local tool = me.Character:FindFirstChildOfClass("Tool")
     if not tool then return end
-
     local values = tool:FindFirstChild("Values")
-    local hitMarker = tool:FindFirstChild("Hitmarker") or tool:FindFirstChild("HitMarker")
-    if not values then return end
+    local ammo = values and values:FindFirstChild("SERVER_Ammo")
+    if not ammo or ammo.Value <= 0 then return end
 
-    local ammo = values:FindFirstChild("SERVER_Ammo")
-    local storedAmmo = values:FindFirstChild("SERVER_StoredAmmo")
-    if not ammo then return end
+    local hitPosition = head.Position
+    local originPos = camera.CFrame.Position
+    local hitDirection = (hitPosition - originPos).Unit
+    local randomKey = RandomString(30) .. "0"
+    local distance = (myRoot.Position - head.Position).Magnitude
 
-    if ammo.Value > 0 then
-        local hitPosition = head.Position
-        local originPos = camera.CFrame.Position
-        local hitDirection = (hitPosition - originPos).Unit
-        local randomKey = RandomString(30) .. "0"
+    createSound()
+    createTracer(originPos, hitPosition)
+    SendHitLog(target.Name, head.Name, distance)
 
-        createSound()
-        createTracer(originPos, hitPosition)
+    events.GNX_S:FireServer(tick(), randomKey, tool, "FDS9I83", originPos, {hitDirection}, false)
 
-        events.GNX_S:FireServer(
-            tick(),
-            randomKey,
-            tool,
-            "FDS9I83",
-            originPos,
-            {hitDirection},
-            false
-        )
-
-        task.delay(0.00001, function()
-            events["ZFKLF__H"]:FireServer(
-                "🧈",
-                tool,
-                randomKey,
-                1,
-                head,
-                hitPosition,
-                hitDirection
-            )
-
-            ammo.Value = math.max(ammo.Value - 1, 0)
-            if hitMarker then
-                hitMarker:Fire(head)
-            end
-            
-            if storedAmmo then
-                storedAmmo.Value = values:FindFirstChild("SERVER_StoredAmmo").Value
-            end
-            
-            events.GNX_R:FireServer(tick(), "KLWE89U0", tool)
-        end)
-    end
+    task.delay(0.00001, function()
+        events["ZFKLF__H"]:FireServer("🧈", tool, randomKey, 1, head, hitPosition, hitDirection)
+        ammo.Value = math.max(ammo.Value - 1, 0)
+        local hitMarker = tool:FindFirstChild("Hitmarker") or tool:FindFirstChild("HitMarker")
+        if hitMarker then hitMarker:Fire(head) end
+        events.GNX_R:FireServer(tick(), "KLWE89U0", tool)
+    end)
 end
 
 run.Heartbeat:Connect(function()
     if not settings.ragebot then return end
-    
     if me.Character and me.Character:FindFirstChildOfClass("Tool") then
         local now = tick()
-        if now - lastshottime < (settings.fireinterval or 0.1) then return end
-        
+        if now - lastshottime < settings.fireinterval then return end
         local target = GetClosestEnemy()
         if target then
-            for i = 1, (settings.shootspeed or 1) do
+            for i = 1, settings.shootspeed do
                 Shoot(target)
             end
             lastshottime = now
@@ -1091,6 +1049,8 @@ rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(V
 rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) settings.checkteam = Value end })
 rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) settings.checkwall = Value end })
 rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) settings.checkdowned = Value end })
+rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) settings.sound = Value end })
+rage:AddToggle('ragehit', { Text = 'Hit Log', Default = false, Callback = function(Value) settings.hitlog = Value end })
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
 rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Compact = false, Callback = function(Value) settings.distance = Value end })
 rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) settings.shootspeed = Value end })
