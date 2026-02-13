@@ -1182,7 +1182,7 @@ plrc:AddToggle("inv", {
 
 local MenuGroup = tabs.settings:AddLeftGroupbox('Menu')
 MenuGroup:AddButton('Unload', function() Library:Unload() end)
-MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Right Shift', NoUI = true, Text = 'Menu Keybind' })
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Q', NoUI = true, Text = 'Menu Keybind' })
 Library.ToggleKeybind = Options.MenuKeybind 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
