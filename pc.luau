@@ -84,23 +84,6 @@ local Meele = {
 	Randomtime = 1
 }
 
-local Settings = {
-    checkDowned = false,
-    wallCheck = false,
-    hitlogEnabled = false,
-    checkWhitelist = false,
-    checkTarget = false,
-    useFOV = false,
-    teamCheck = false,
-    fovRadius = 75,
-    shootSpeed = 15,
-    fireInterval = 0.17,
-    maxDistance = 2000,
-    bulletTracerEnabled = false,
-    tracerColor = Color3.fromRGB(255, 0, 0),
-    showFOV = false
-}
-
 local cockie = {
     SilentAimCircle = nil
 }
@@ -116,23 +99,6 @@ local visw = tabs.visuals:AddRightGroupbox("World Visuals")
 local visp = tabs.visuals:AddLeftGroupbox('View Model Visuals')
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
-
-local Events = ReplicatedStorage:FindFirstChild("Events")
-local GNX_S = Events:FindFirstChild("GNX_S")
-local ZFKLF__H = Events:FindFirstChild("ZFKLF__H")
-
-local WallbangSamples = 72
-local WallbangRadius = 10
-local WallbangHeight = 6
-local NOTIFY_COOLDOWN = 0.35
-local lastHitNotify = {}
-local lastShotTime = 0
-
-local function RandomString(len)
-    local s = ""
-    for i = 1, len do s = s .. string.char(math.random(97, 122)) end
-    return s
-end
 
 local function IsPlayerDowned(p)
     if not p or not p.Character then return false end
@@ -295,154 +261,201 @@ local function aimbotLoop()
 end
 task.spawn(aimbotLoop)
 
-local function createTracer(startPos, endPos)
-    if not Settings.bulletTracerEnabled then return end
-    local tracer = Instance.new("Part")
-    tracer.Anchored = true
-    tracer.CanCollide = false
-    tracer.Material = Enum.Material.Neon
-    tracer.Color = Settings.tracerColor
-    tracer.Shape = Enum.PartType.Cylinder
-    local distance = (startPos - endPos).Magnitude
-    tracer.Size = Vector3.new(distance, 0.12, 0.12)
-    tracer.CFrame = CFrame.new((startPos + endPos) / 2, endPos) * CFrame.Angles(0, math.pi / 2, 0)
-    tracer.Parent = Workspace
-    task.spawn(function()
-        for t = 0, 1, 0.02 do
-            if tracer and tracer.Parent then
-                tracer.Transparency = t
-                task.wait(1/50)
-            end
-        end
-        if tracer and tracer.Parent then tracer:Destroy() end
+local rep = game:GetService("ReplicatedStorage")
+local events = rep:WaitForChild("Events")
+
+local settings = {
+    ragebot = false,
+    checkdowned = false,
+    checkteam = false,
+    checkwall = false,
+    distance = 1000,
+    fireinterval = 0.1,
+    shootspeed = 1,
+    CheckWhiteList = false,
+    bulletTracerEnabled = false
+}
+
+local lastshottime = 0
+
+local function RandomString(length)
+    local res = ""
+    for i = 1, length do
+        res = res .. string.char(math.random(97, 122))
+    end
+    return res
+end
+
+local function createSound()
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://7136858729"
+    sound.Volume = 2
+    sound.Parent = camera
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
     end)
 end
 
-local function MakeRaycastParams()
-    local rp = RaycastParams.new()
-    rp.FilterType = Enum.RaycastFilterType.Exclude
-    rp.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
-    rp.IgnoreWater = true
-    return rp
-end
+local function createTracer(startPos, endPos)
+    if not settings.bulletTracerEnabled then return end
+    
+    local attachment0 = Instance.new("Attachment")
+    attachment0.WorldPosition = startPos
+    attachment0.Parent = workspace.Terrain
 
-local function FindWallbangPoint(origin, targetPart)
-    if not origin or not targetPart then return nil end
-    local base = targetPart.Position
-    local rp = MakeRaycastParams()
-    for i = 1, WallbangSamples do
-        local angle = (i / WallbangSamples) * math.pi * 2
-        local r = WallbangRadius * (0.6 + math.random() * 0.8)
-        local yOff = (math.random() * 2 - 1) * WallbangHeight
-        local offset = Vector3.new(math.cos(angle) * r, yOff, math.sin(angle) * r)
-        local testPoint = base + offset
-        local dir = (testPoint - origin)
-        if dir.Magnitude > 0 then
-            local result = Workspace:Raycast(origin, dir, rp)
-            if result then
-                if result.Instance and result.Instance:IsDescendantOf(targetPart.Parent) then
-                    return testPoint
-                else
-                    local distHitToTarget = (result.Position - base).Magnitude
-                    if distHitToTarget <= 2.0 then
-                        return testPoint
-                    end
-                end
-            else
-                return testPoint
+    local attachment1 = Instance.new("Attachment")
+    attachment1.WorldPosition = endPos
+    attachment1.Parent = workspace.Terrain
+
+    local beam = Instance.new("Beam")
+    beam.Texture = "rbxassetid://7136858729"
+    beam.TextureMode = Enum.TextureMode.Stretch
+    beam.FaceCamera = true
+    beam.LightInfluence = 0
+    beam.Width0 = 0.8
+    beam.Width1 = 0.8
+    beam.Attachment0 = attachment0
+    beam.Attachment1 = attachment1
+    beam.Color = ColorSequence.new(Color3.new(1, 1, 1))
+    beam.Parent = workspace.Terrain
+
+    task.spawn(function()
+        for t = 0, 1, 0.05 do
+            if beam and beam.Parent then
+                beam.Transparency = NumberSequence.new(t)
             end
+            task.wait(0.03)
         end
-    end
-    return nil
+        if beam then beam:Destroy() end
+        if attachment0 then attachment0:Destroy() end
+        if attachment1 then attachment1:Destroy() end
+    end)
 end
 
 local function GetClosestEnemy()
-    local me = LocalPlayer.Character
-    if not me or not me:FindFirstChild("HumanoidRootPart") then return nil end
-    local closest, shortest = nil, math.huge
-    local originPos = me.HumanoidRootPart.Position
+    if not me.Character or not me.Character:FindFirstChild("HumanoidRootPart") then 
+        return nil 
+    end
 
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            if Settings.teamCheck and p.Team == LocalPlayer.Team then continue end
-            if Settings.checkDowned and IsPlayerDowned(p) then continue end
-            
-            local head = p.Character:FindFirstChild("Head")
-            if head then
-                local dist3D = (originPos - head.Position).Magnitude
-                if dist3D <= Settings.maxDistance then
-                    local center = functions.SilentMiddle and Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2) or UserInputService:GetMouseLocation()
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                    if onScreen then
-                        local d2 = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-                        if d2 <= (Settings.useFOV and Settings.fovRadius or math.huge) and d2 < shortest then
-                            shortest = d2
-                            closest = p
-                        end
+    local closestEnemy = nil
+    local shortestDistance = settings.distance or 100 
+
+    for _, player in pairs(plrs:GetPlayers()) do
+        if player == me then continue end
+        if settings.checkteam and player.Team == me.Team then continue end
+        
+        local character = player.Character
+        if not character or not character:FindFirstChild("Humanoid") then continue end
+        if settings.checkdowned and character.Humanoid.Health <= 15 then continue end
+
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        local head = character:FindFirstChild("Head")
+
+        if character and rootPart and head and humanoid and humanoid.Health > 15 and not character:FindFirstChildOfClass("ForceField") then
+            if settings.CheckWhiteList and table.find(shared.WhiteList or {}, player) then
+                continue
+            end
+
+            local distance = (rootPart.Position - me.Character.HumanoidRootPart.Position).Magnitude
+            if distance < shortestDistance then
+                
+                if settings.checkwall then
+                    local rayParams = RaycastParams.new()
+                    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+                    rayParams.FilterDescendantsInstances = {me.Character, camera}
+                    
+                    local ray = workspace:Raycast(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * distance, rayParams)
+                    
+                    if ray and not ray.Instance:IsDescendantOf(character) then
+                        continue
                     end
                 end
+
+                shortestDistance = distance
+                closestEnemy = player
             end
         end
     end
-    return closest
+    return closestEnemy
 end
 
 local function Shoot(target)
     if not target or not target.Character then return end
+
     local head = target.Character:FindFirstChild("Head")
-    local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if not head or not tool then return end
-    
-    local handle = tool:FindFirstChild("WeaponHandle")
-    local origin = (handle and handle.Position) or Camera.CFrame.Position
-    local aimPos = head.Position
-    local dir = (aimPos - origin)
-    local rp = MakeRaycastParams()
+    if not head then return end
 
-    local ray = Workspace:Raycast(origin, dir, rp)
-    local lineOfSight = (not ray) or (ray.Instance and ray.Instance:IsDescendantOf(target.Character))
+    local tool = me.Character and me.Character:FindFirstChildOfClass("Tool")
+    if not tool then return end
 
-    local chosenAimPoint = aimPos
-    local wallbangFound = false
-    if not lineOfSight then
-        local found = FindWallbangPoint(origin, head)
-        if found then
-            chosenAimPoint = found
-            wallbangFound = true
-        end
-    end
+    local values = tool:FindFirstChild("Values")
+    local hitMarker = tool:FindFirstChild("Hitmarker") or tool:FindFirstChild("HitMarker")
+    if not values then return end
 
-    if not lineOfSight and Settings.wallCheck and not wallbangFound then
-        return
-    end
+    local ammo = values:FindFirstChild("SERVER_Ammo")
+    local storedAmmo = values:FindFirstChild("SERVER_StoredAmmo")
+    if not ammo then return end
 
-    local finalDir = (chosenAimPoint - origin).Unit
-    local key = RandomString(30) .. "0"
+    if ammo.Value > 0 then
+        local hitPosition = head.Position
+        local originPos = camera.CFrame.Position
+        local hitDirection = (hitPosition - originPos).Unit
+        local randomKey = RandomString(30) .. "0"
 
-    pcall(function() GNX_S:FireServer(tick(), key, tool, "FDS9I83", origin, {finalDir}, false) end)
-    pcall(function() ZFKLF__H:FireServer("🧈", tool, key, 1, head, chosenAimPoint, finalDir) end)
+        createSound()
+        createTracer(originPos, hitPosition)
 
-    createTracer(origin, chosenAimPoint)
+        events.GNX_S:FireServer(
+            tick(),
+            randomKey,
+            tool,
+            "FDS9I83",
+            originPos,
+            {hitDirection},
+            false
+        )
 
-    local now = tick()
-    if not lastHitNotify[target.UserId] or now - lastHitNotify[target.UserId] >= NOTIFY_COOLDOWN then
-        lastHitNotify[target.UserId] = now
-        
-        if Settings.hitlogEnabled then
-            StarterGui:SetCore("SendNotification", {Title = "RageBot Hit", Text = "Hit " .. target.Name, Duration = 2})
-        end
+        task.delay(0.00001, function()
+            events["ZFKLF__H"]:FireServer(
+                "🧈",
+                tool,
+                randomKey,
+                1,
+                head,
+                hitPosition,
+                hitDirection
+            )
+
+            ammo.Value = math.max(ammo.Value - 1, 0)
+            if hitMarker then
+                hitMarker:Fire(head)
+            end
+            
+            if storedAmmo then
+                storedAmmo.Value = values:FindFirstChild("SERVER_StoredAmmo").Value
+            end
+            
+            events.GNX_R:FireServer(tick(), "KLWE89U0", tool)
+        end)
     end
 end
 
-RunService.Heartbeat:Connect(function()
-    if not functions.RageBot then return end
-    local now = tick()
-    if now - lastShotTime < Settings.fireInterval then return end
+run.Heartbeat:Connect(function()
+    if not settings.ragebot then return end
     
-    local target = GetClosestEnemy()
-    if target then
-        Shoot(target)
-        lastShotTime = now
+    if me.Character and me.Character:FindFirstChildOfClass("Tool") then
+        local now = tick()
+        if now - lastshottime < (settings.fireinterval or 0.1) then return end
+        
+        local target = GetClosestEnemy()
+        if target then
+            for i = 1, (settings.shootspeed or 1) do
+                Shoot(target)
+            end
+            lastshottime = now
+        end
     end
 end)
 
@@ -1072,18 +1085,16 @@ aimbot:AddToggle('aimbotfov_f', { Text = 'Filled', Default = false, Callback = f
 aimbot:AddSlider('aimbotfov_s', { Text = 'FOV Size', Default = 100, Min = 0, Max = 500, Rounding = 2, Compact = false, Callback = function(Value) functions.fovsize = Value end })
 aimbot:AddSlider('aimbotfov_y', { Text = 'Thickness', Default = 1, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) functions.thickness = Value end })
 
-rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) functions.RageBot = Value end }):AddKeyPicker("ragekey", {
+rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) settings.ragebot = Value end }):AddKeyPicker("ragekey", {
     Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Rage Bot Key", NoUI = false,
 })
-rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
-rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) Settings.checkWall = Value end })
-rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) Settings.checkDowned = Value end })
-rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
-rage:AddToggle('ragehitlog', { Text = 'Hit Log', Default = false, Callback = function(Value) Settings.hitlogEnabled = Value end })
-rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) Settings.bulletTracerEnabled = Value end })
-rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Compact = false, Callback = function(Value) Settings.maxDistance = Value end })
-rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Settings.shootSpeed = Value end })
-rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) Settings.fireInterval = Value end })
+rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) settings.checkteam = Value end })
+rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) settings.checkwall = Value end })
+rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) settings.checkdowned = Value end })
+rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
+rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Compact = false, Callback = function(Value) settings.distance = Value end })
+rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) settings.shootspeed = Value end })
+rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) settings.fireinterval = Value end })
 
 meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) 
 		Meele.Toggle = Value
