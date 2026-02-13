@@ -303,7 +303,7 @@ local function createSound()
 	if not settings.sound then return end
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://92570611018210"
-    sound.Volume = 2
+    sound.Volume = 1
     sound.Parent = camera
     sound:Play()
     sound.Ended:Connect(function()
@@ -1128,6 +1128,23 @@ meele:AddDropdown('AimPartDropdown', {
 meele:AddSlider('meeletime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) Meele.Randomtime = Value end })
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
 
+local fovcamera = false
+local fovcameraamount = 70
+
+plrc:AddToggle("fovcamera", {
+    Text = "Field Of View",
+    Default = false,
+    Disabled = false,
+    Visible = true,
+    Risky = false,
+
+    Callback = function(Value)
+        fovcamera = Value
+    end
+})
+
+plrc:AddSlider('fovcameraamount', { Text = 'Field Of View Amount', Default = 70, Min = 0, Max = 120, Rounding = 2, Compact = false, Callback = function(Value) fovcameraamount = Value if fovcamera then run.RenderStepped:Connect(function() camera.FieldOfView = Value end) end })
+
 plrc:AddToggle("inv", {
     Text = "Invisible",
     Default = false,
@@ -1147,7 +1164,7 @@ plrc:AddToggle("inv", {
 
 local MenuGroup = tabs.settings:AddLeftGroupbox('Menu')
 MenuGroup:AddButton('Unload', function() Library:Unload() end)
-MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'End', NoUI = true, Text = 'Menu Keybind' })
+MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Right Shift', NoUI = true, Text = 'Menu Keybind' })
 Library.ToggleKeybind = Options.MenuKeybind 
 ThemeManager:SetLibrary(Library)
 SaveManager:SetLibrary(Library)
