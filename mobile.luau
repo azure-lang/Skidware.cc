@@ -18,7 +18,8 @@ local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))
 local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
 
 local window = Library:CreateWindow({
-    Title = "Skidware.cc"
+    Title = "Skidware.cc",
+    Footer = "Vesion: Paid"
 })
 
 local tabs = {
@@ -80,23 +81,6 @@ local Meele = {
 	Randomtime = 1
 }
 
-local Settings = {
-    checkDowned = false,
-    wallCheck = false,
-    hitlogEnabled = false,
-    checkWhitelist = false,
-    checkTarget = false,
-    useFOV = false,
-    teamCheck = false,
-    fovRadius = 75,
-    shootSpeed = 15,
-    fireInterval = 0.17,
-    maxDistance = 2000,
-    bulletTracerEnabled = false,
-    tracerColor = Color3.fromRGB(255, 0, 0),
-    showFOV = false
-}
-
 local cockie = {
     SilentAimCircle = nil
 }
@@ -108,25 +92,10 @@ local rage = tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = tabs.main:AddRightGroupbox("Meele Aura")
 local plrc = tabs.player:AddLeftGroupbox("Player Modifications")
 local viss = tabs.visuals:AddRightGroupbox("Player Visuals Settings")
+local visw = tabs.visuals:AddRightGroupbox("World Visuals")
+local visp = tabs.visuals:AddLeftGroupbox('View Model Visuals')
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
-
-local Events = ReplicatedStorage:FindFirstChild("Events")
-local GNX_S = Events:FindFirstChild("GNX_S")
-local ZFKLF__H = Events:FindFirstChild("ZFKLF__H")
-
-local WallbangSamples = 72
-local WallbangRadius = 10
-local WallbangHeight = 6
-local NOTIFY_COOLDOWN = 0.35
-local lastHitNotify = {}
-local lastShotTime = 0
-
-local function RandomString(len)
-    local s = ""
-    for i = 1, len do s = s .. string.char(math.random(97, 122)) end
-    return s
-end
 
 local function IsPlayerDowned(p)
     if not p or not p.Character then return false end
@@ -184,7 +153,7 @@ local function SetupSilentAim()
 
     RunService.RenderStepped:Connect(function()
         if cockie.SilentAimCircle then
-            local pos = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+            local pos = UserInputService:GetMouseLocation()
             cockie.SilentAimCircle.Visible = functions.SilentAim and SectionSettings.SilentAim.ShowFOV
             cockie.SilentAimCircle.Radius = SectionSettings.SilentAim.DrawSize
             cockie.SilentAimCircle.Thickness = SectionSettings.SilentAim.Thickness
@@ -232,7 +201,7 @@ fovCircle.Filled = false
 fovCircle.Visible = false
 
 run.RenderStepped:Connect(function()
-    local pos = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+    local pos = UserInputService:GetMouseLocation()
     fovCircle.Visible = functions.fov
     fovCircle.Radius = functions.fovsize
     fovCircle.Color = functions.fovcolor
@@ -289,33 +258,112 @@ local function aimbotLoop()
 end
 task.spawn(aimbotLoop)
 
+local rep = game:GetService("ReplicatedStorage")
+local events = rep:WaitForChild("Events")
+local mouse = me:GetMouse()
+
+local settings = {
+    ragebot = false,
+    checkdowned = false,
+    checkteam = false,
+    checkwall = false,
+    distance = 1000,
+    fireinterval = 0.1,
+    shootspeed = 1,
+    hitlog = false,
+	sound = false,
+	selected_sound = '92570611018210',
+    CheckWhiteList = false,
+    bulletTracerEnabled = false,
+    tracerColor = Color3.new(1, 1, 1),
+    fov_enabled = false,
+    fov_radius = 150,
+    fov_color = Color3.new(1, 1, 1)
+}
+
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1
+FOVCircle.NumSides = 100
+FOVCircle.Radius = settings.fov_radius
+FOVCircle.Filled = false
+FOVCircle.Visible = settings.fov_enabled
+FOVCircle.Color = settings.fov_color
+FOVCircle.Transparency = 1
+
+local sounds = {
+	['Rust'] = 92570611018210,
+	['Skeet'] = 83717596220569,
+	['Neverlose'] = 6607204501,
+	['Minecraft'] = 136876055001267,
+	['Headshot'] = 140572774008234
+}
+
+local lastshottime = 0
+local whitelist = {}
+local WallbangSamples = 72
+local WallbangRadius = 10
+local WallbangHeight = 6
+
+local function RandomString(length)
+    local res = ""
+    for i = 1, length do
+        res = res .. string.char(math.random(97, 122))
+    end
+    return res
+end
+
+local function SendHitLog(targetName, bodyPart, distance)
+    if not settings.hitlog then return end
+    local message = string.format("Hit %s on %s, %.1f studs", targetName, bodyPart, distance)
+    Library:Notify(message, 4)
+end
+
+local function createSound()
+	if not settings.sound then return end
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://" .. settings.selected_sound
+    sound.Volume = 1
+    sound.Parent = camera
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
+
 local function createTracer(startPos, endPos)
-    if not Settings.bulletTracerEnabled then return end
-    local tracer = Instance.new("Part")
-    tracer.Anchored = true
-    tracer.CanCollide = false
-    tracer.Material = Enum.Material.Neon
-    tracer.Color = Settings.tracerColor
-    tracer.Shape = Enum.PartType.Cylinder
-    local distance = (startPos - endPos).Magnitude
-    tracer.Size = Vector3.new(distance, 0.12, 0.12)
-    tracer.CFrame = CFrame.new((startPos + endPos) / 2, endPos) * CFrame.Angles(0, math.pi / 2, 0)
-    tracer.Parent = Workspace
+    if not settings.bulletTracerEnabled then return end
+    local att0 = Instance.new("Attachment")
+    att0.WorldPosition = startPos
+    att0.Parent = workspace.Terrain
+    local att1 = Instance.new("Attachment")
+    att1.WorldPosition = endPos
+    att1.Parent = workspace.Terrain
+    local beam = Instance.new("Beam")
+    beam.Texture = "rbxassetid://7136858729"
+    beam.TextureMode = Enum.TextureMode.Stretch
+    beam.FaceCamera = true
+    beam.LightInfluence = 0
+    beam.Width0 = 0.8
+    beam.Width1 = 0.8
+    beam.Attachment0 = att0
+    beam.Attachment1 = att1
+    beam.Color = ColorSequence.new(settings.tracerColor)
+    beam.Parent = workspace.Terrain
     task.spawn(function()
-        for t = 0, 1, 0.02 do
-            if tracer and tracer.Parent then
-                tracer.Transparency = t
-                task.wait(1/50)
-            end
+        for t = 0, 1, 0.05 do
+            if beam and beam.Parent then beam.Transparency = NumberSequence.new(t) end
+            task.wait(0.03)
         end
-        if tracer and tracer.Parent then tracer:Destroy() end
+        if beam then beam:Destroy() end
+        if att0 then att0:Destroy() end
+        if att1 then att1:Destroy() end
     end)
 end
 
 local function MakeRaycastParams()
     local rp = RaycastParams.new()
     rp.FilterType = Enum.RaycastFilterType.Exclude
-    rp.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    rp.FilterDescendantsInstances = {me.Character, camera}
     rp.IgnoreWater = true
     return rp
 end
@@ -324,6 +372,8 @@ local function FindWallbangPoint(origin, targetPart)
     if not origin or not targetPart then return nil end
     local base = targetPart.Position
     local rp = MakeRaycastParams()
+    local MaxDistance = 10000
+
     for i = 1, WallbangSamples do
         local angle = (i / WallbangSamples) * math.pi * 2
         local r = WallbangRadius * (0.6 + math.random() * 0.8)
@@ -331,8 +381,11 @@ local function FindWallbangPoint(origin, targetPart)
         local offset = Vector3.new(math.cos(angle) * r, yOff, math.sin(angle) * r)
         local testPoint = base + offset
         local dir = (testPoint - origin)
+        
         if dir.Magnitude > 0 then
-            local result = Workspace:Raycast(origin, dir, rp)
+            local extendedDir = dir.Unit * MaxDistance
+            local result = workspace:Raycast(origin, extendedDir, rp)
+            
             if result then
                 if result.Instance and result.Instance:IsDescendantOf(targetPart.Parent) then
                     return testPoint
@@ -351,92 +404,107 @@ local function FindWallbangPoint(origin, targetPart)
 end
 
 local function GetClosestEnemy()
-    local me = LocalPlayer.Character
-    if not me or not me:FindFirstChild("HumanoidRootPart") then return nil end
-    local closest, shortest = nil, math.huge
-    local originPos = me.HumanoidRootPart.Position
-
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character then
-            if Settings.teamCheck and p.Team == LocalPlayer.Team then continue end
-            if Settings.checkDowned and IsPlayerDowned(p) then continue end
+    if not me.Character or not me.Character:FindFirstChild("HumanoidRootPart") then return nil end
+    local closestEnemy, shortestDistance = nil, math.huge
+    local myRootPos = me.Character.HumanoidRootPart.Position
+    
+    for _, player in pairs(plrs:GetPlayers()) do
+        if player == me or (settings.checkteam and player.Team == me.Team) then continue end
+        local character = player.Character
+        if not character or not character:FindFirstChild("Humanoid") then continue end
+        if settings.checkdowned and character.Humanoid.Health <= 15 then continue end
+        
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if rootPart and character:FindFirstChildOfClass("Humanoid").Health > 15 then
+            if settings.CheckWhiteList and table.find(whitelist, player) then continue end
             
-            local head = p.Character:FindFirstChild("Head")
-            if head then
-                local dist3D = (originPos - head.Position).Magnitude
-                if dist3D <= Settings.maxDistance then
-                    local center = functions.SilentMiddle and Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2) or UserInputService:GetMouseLocation()
-                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                    if onScreen then
-                        local d2 = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
-                        if d2 <= (Settings.useFOV and Settings.fovRadius or math.huge) and d2 < shortest then
-                            shortest = d2
-                            closest = p
-                        end
+            local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+            if onScreen then
+                local mouseDistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                if mouseDistance <= settings.fov_radius then
+                    local worldDist = (rootPart.Position - myRootPos).Magnitude
+                    if worldDist < settings.distance and mouseDistance < shortestDistance then
+                        shortestDistance = mouseDistance
+                        closestEnemy = player
                     end
                 end
             end
         end
     end
-    return closest
+    return closestEnemy
 end
 
 local function Shoot(target)
     if not target or not target.Character then return end
     local head = target.Character:FindFirstChild("Head")
-    local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    if not head or not tool then return end
-    
-    local handle = tool:FindFirstChild("WeaponHandle")
-    local origin = (handle and handle.Position) or Camera.CFrame.Position
+    local myRoot = me.Character:FindFirstChild("HumanoidRootPart")
+    if not head or not myRoot then return end
+    local tool = me.Character:FindFirstChildOfClass("Tool")
+    if not tool then return end
+    local values = tool:FindFirstChild("Values")
+    local ammo = values and values:FindFirstChild("SERVER_Ammo")
+    if not ammo or ammo.Value <= 0 then return end
+
+    local originPos = camera.CFrame.Position
     local aimPos = head.Position
-    local dir = (aimPos - origin)
     local rp = MakeRaycastParams()
+    local ray = workspace:Raycast(originPos, (aimPos - originPos), rp)
+    local los = (not ray) or (ray.Instance and ray.Instance:IsDescendantOf(target.Character))
 
-    local ray = Workspace:Raycast(origin, dir, rp)
-    local lineOfSight = (not ray) or (ray.Instance and ray.Instance:IsDescendantOf(target.Character))
-
-    local chosenAimPoint = aimPos
+    local chosenPoint = aimPos
     local wallbangFound = false
-    if not lineOfSight then
-        local found = FindWallbangPoint(origin, head)
+
+    if not los then
+        local found = FindWallbangPoint(originPos, head)
         if found then
-            chosenAimPoint = found
+            chosenPoint = found
             wallbangFound = true
         end
     end
 
-    if not lineOfSight and Settings.wallCheck and not wallbangFound then
-        return
-    end
+    if not los and settings.checkwall and not wallbangFound then return end
 
-    local finalDir = (chosenAimPoint - origin).Unit
-    local key = RandomString(30) .. "0"
+    local hitDirection = (chosenPoint - originPos).Unit
+    local randomKey = RandomString(30) .. "0"
+    local distToPlayer = (myRoot.Position - head.Position).Magnitude
 
-    pcall(function() GNX_S:FireServer(tick(), key, tool, "FDS9I83", origin, {finalDir}, false) end)
-    pcall(function() ZFKLF__H:FireServer("🧈", tool, key, 1, head, chosenAimPoint, finalDir) end)
+    createSound()
+    createTracer(originPos, chosenPoint)
+    SendHitLog(target.Name, head.Name, distToPlayer)
 
-    createTracer(origin, chosenAimPoint)
+    events.GNX_S:FireServer(tick(), randomKey, tool, "FDS9I83", originPos, {hitDirection}, false)
 
-    local now = tick()
-    if not lastHitNotify[target.UserId] or now - lastHitNotify[target.UserId] >= NOTIFY_COOLDOWN then
-        lastHitNotify[target.UserId] = now
-        
-        if Settings.hitlogEnabled then
-            StarterGui:SetCore("SendNotification", {Title = "RageBot Hit", Text = "Hit " .. target.Name, Duration = 2})
-        end
-    end
+    task.delay(0.00001, function()
+        events["ZFKLF__H"]:FireServer("🧈", tool, randomKey, 1, head, chosenPoint, hitDirection)
+        ammo.Value = math.max(ammo.Value - 1, 0)
+        local hitMarker = tool:FindFirstChild("Hitmarker") or tool:FindFirstChild("HitMarker")
+        if hitMarker then hitMarker:Fire(head) end
+        events.GNX_R:FireServer(tick(), "KLWE89U0", tool)
+    end)
 end
 
-RunService.Heartbeat:Connect(function()
-    if not functions.RageBot then return end
-    local now = tick()
-    if now - lastShotTime < Settings.fireInterval then return end
-    
-    local target = GetClosestEnemy()
-    if target then
-        Shoot(target)
-        lastShotTime = now
+local soundList = {}
+for name, _ in pairs(sounds) do table.insert(soundList, name) end
+
+run.RenderStepped:Connect(function()
+    FOVCircle.Visible = settings.fov_enabled
+    FOVCircle.Radius = settings.fov_radius
+    FOVCircle.Position = UserInputService:GetMouseLocation()
+    FOVCircle.Color = settings.fov_color
+end)
+
+run.Heartbeat:Connect(function()
+    if not settings.ragebot then return end
+    if me.Character and me.Character:FindFirstChildOfClass("Tool") then
+        local now = tick()
+        if now - lastshottime < settings.fireinterval then return end
+        local target = GetClosestEnemy()
+        if target then
+            for i = 1, settings.shootspeed do
+                Shoot(target)
+            end
+            lastshottime = now
+        end
     end
 end)
 
@@ -885,6 +953,101 @@ viss:AddSlider('tracer thickness', {
     Callback = function(Value) ESP.Tracer_Thickness = Value end
 })
 
+visw:AddToggle('dealeresp', { Text = 'Dealer ESP', Default = false, Callback = function(val)
+        DealerESP_Enabled = val
+        if val then
+            task.spawn(function()
+                while DealerESP_Enabled do
+                    task.wait(1)
+                    if Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Shopz") then
+                        for _, v in pairs(Workspace.Map.Shopz:GetChildren()) do
+                            if (v.Name == "Dealer" or v.Name == "ArmoryDealer") and not v:FindFirstChild("DealerESP") then
+                                local hl = Instance.new("Highlight", v)
+                                hl.Name = "DealerESP"
+                                if v.Name == "Dealer" then hl.FillColor = Color3.fromRGB(153, 255, 153)
+                                else hl.FillColor = Color3.fromRGB(153, 204, 255) end
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+             if Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Shopz") then
+                for _, v in pairs(Workspace.Map.Shopz:GetChildren()) do
+                    if v:FindFirstChild("DealerESP") then v.DealerESP:Destroy() end
+                end
+            end
+        end
+    end
+})
+local SafeESP_Enabled = false
+visw:AddToggle('safeesp', { Text = 'Safe ESP', Default = false, Callback = function(val)
+        SafeESP_Enabled = val
+        if val then
+            task.spawn(function()
+                while SafeESP_Enabled do
+                    task.wait(1)
+                    if Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("BredMakurz") then
+                        for _, obj in pairs(Workspace.Map.BredMakurz:GetChildren()) do
+                            if not obj:FindFirstChild("SafeESP") then
+                                local isSafe = obj.Name:lower():find("safe") or obj.Name:lower():find("register") or obj.Name:lower():find("cash")
+                                if isSafe then
+                                    local bg = Instance.new("BillboardGui", obj)
+                                    bg.Name = "SafeESP"
+                                    bg.AlwaysOnTop = true
+                                    bg.Size = UDim2.new(1.2, 0, 1.2, 0)
+                                    local txt = Instance.new("TextLabel", bg)
+                                    txt.Name = "name"
+                                    txt.Size = UDim2.new(1,0,0.3,0)
+                                    txt.BackgroundTransparency = 1
+                                    txt.TextColor3 = Color3.fromRGB(0, 255, 0)
+                                    txt.Text = obj.Name
+									txt.TextStrokeTransparency = 0
+                                    local hp = Instance.new("TextLabel", bg)
+                                    hp.Name = "health"
+                                    hp.Size = UDim2.new(1,0,0.3,0)
+                                    hp.Position = UDim2.new(0,0,0,17)
+									hp.BackgroundTransparency = 1
+                                    hp.TextColor3 = Color3.fromRGB(0, 255, 0)
+									hp.TextStrokeTransparency = 0
+
+                                    if obj:FindFirstChild("Values") and obj.Values:FindFirstChild("Broken") then
+                                        if obj.Values.Broken.Value then
+                                            txt.TextColor3 = Color3.fromRGB(255, 0, 0)
+                                            hp.Visible = false
+                                        else
+                                            if obj.Values:FindFirstChild("Health") then
+                                                hp.Text = "Health: " .. obj.Values.Health.Value
+                                            end
+                                        end
+                                    end
+                                end
+                            else
+                                if obj:FindFirstChild("Values") and obj.Values:FindFirstChild("Broken") and obj.SafeESP:FindFirstChild("name") then
+                                     if obj.Values.Broken.Value then
+                                        obj.SafeESP.name.TextColor3 = Color3.fromRGB(255, 0, 0)
+                                        if obj.SafeESP:FindFirstChild("health") then obj.SafeESP.health.Visible = false end
+                                     else
+                                        if obj.Values:FindFirstChild("Health") and obj.SafeESP:FindFirstChild("health") then
+                                            obj.SafeESP.health.Text = "Health: " .. obj.Values.Health.Value
+                                        end
+                                     end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+            if Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("BredMakurz") then
+                for _, obj in pairs(Workspace.Map.BredMakurz:GetChildren()) do
+                    if obj:FindFirstChild("SafeESP") then obj.SafeESP:Destroy() end
+                end
+            end
+			SafeESP_Enabled = false
+        end
+    end
+})
 silent:AddToggle('v1', {
     Text = 'Toggle',
     Default = false,
@@ -971,18 +1134,24 @@ aimbot:AddToggle('aimbotfov_f', { Text = 'Filled', Default = false, Callback = f
 aimbot:AddSlider('aimbotfov_s', { Text = 'FOV Size', Default = 100, Min = 0, Max = 500, Rounding = 2, Compact = false, Callback = function(Value) functions.fovsize = Value end })
 aimbot:AddSlider('aimbotfov_y', { Text = 'Thickness', Default = 1, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) functions.thickness = Value end })
 
-rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) functions.RageBot = Value end }):AddKeyPicker("ragekey", {
+rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) settings.ragebot = Value end }):AddKeyPicker("ragekey", {
     Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Rage Bot Key", NoUI = false,
 })
-rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
-rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) Settings.checkWall = Value end })
-rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) Settings.checkDowned = Value end })
-rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) Settings.checkTeam = Value end })
-rage:AddToggle('ragehitlog', { Text = 'Hit Log', Default = false, Callback = function(Value) Settings.hitlogEnabled = Value end })
-rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) Settings.bulletTracerEnabled = Value end })
-rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 2000, Rounding = 1, Compact = false, Callback = function(Value) Settings.maxDistance = Value end })
-rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Settings.shootSpeed = Value end })
-rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) Settings.fireInterval = Value end })
+rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) settings.checkteam = Value end })
+rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) settings.checkwall = Value end })
+rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) settings.checkdowned = Value end })
+rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) settings.sound = Value end })
+rage:AddToggle('ragehit', { Text = 'Hit Log', Default = false, Callback = function(Value) settings.hitlog = Value end })
+rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
+rage:AddToggle('ragefov', { Text = 'FOV Circle', Default = false, Callback = function(Value) settings.fov_enabled = Value end }):AddColorPicker('fov color rage', {
+    Default = Color3.new(1, 1, 1), Title = 'FOV Color', Transparency = 0,
+    Callback = function(Value) settings.fov_color = Value end
+})
+rage:AddDropdown("hitsound_dropdown", { Text = "Hit Sound List", Values = soundList, Default = "Default", Multi = false, Callback = function(v) settings.selected_sound = sounds[v] end })
+rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Compact = false, Callback = function(Value) settings.distance = Value end })
+rage:AddSlider('fovradius', { Text = 'FOV Radius', Default = 150, Min = 0, Max = 500, Rounding = 1, Compact = false, Callback = function(Value) settings.fov_radius = Value end })
+rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) settings.shootspeed = Value end })
+rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) settings.fireinterval = Value end })
 
 meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) 
 		Meele.Toggle = Value
@@ -1007,6 +1176,100 @@ meele:AddDropdown('AimPartDropdown', {
 meele:AddSlider('meeletime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Compact = false, Callback = function(Value) Meele.Randomtime = Value end })
 meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) Meele.Distance = Value end })
 
+local fovcamera = false
+local fovcameraamount = 70
+local cframespeed = false
+local cframespeedamount = 1
+local spin = false
+local spinspeed = 10
+local jumpheight = false
+local jumpamount = 7.2
+
+plrc:AddToggle("fovcamera", {
+    Text = "Field Of View",
+    Default = false,
+    Callback = function(Value)
+        fovcamera = Value
+        if not Value then
+            camera.FieldOfView = 70
+        end
+    end
+})
+
+plrc:AddSlider('fovcameraamount', { 
+    Text = 'Field Of View Amount', 
+    Default = 70, Min = 0, Max = 120, Rounding = 2, 
+    Callback = function(Value) fovcameraamount = Value end 
+})
+
+plrc:AddToggle("cframespeed", {
+    Text = "CFrame Speed",
+    Default = false,
+    Callback = function(Value) cframespeed = Value end
+})
+
+plrc:AddSlider('cframespeedamount', { 
+    Text = 'CFrame Speed Amount', 
+    Default = 1, Min = 0, Max = 5, Rounding = 2, 
+    Callback = function(Value) cframespeedamount = Value end
+})
+
+plrc:AddToggle("jumpheight", {
+    Text = "Jump Height",
+    Default = false,
+    Callback = function(Value)
+        jumpheight = Value
+        if not Value and me.Character and me.Character:FindFirstChild("Humanoid") then
+            me.Character.Humanoid.JumpHeight = 7.2
+        end
+    end
+})
+
+plrc:AddSlider('jumpamount', { 
+    Text = 'Jump Height Amount', 
+    Default = 7.2, Min = 0, Max = 50, Rounding = 2, 
+    Callback = function(Value) jumpamount = Value end
+})
+
+plrc:AddToggle("spin", {
+    Text = "Spin",
+    Default = false,
+    Callback = function(Value) spin = Value end
+})
+
+plrc:AddSlider('spinspeed', { 
+    Text = 'Spin Speed', 
+    Default = 10, Min = 0, Max = 100, Rounding = 2, 
+    Callback = function(Value) spinspeed = Value end
+})
+
+run.RenderStepped:Connect(function()
+    if fovcamera then
+        camera.FieldOfView = fovcameraamount
+    end
+    
+    if jumpheight and me.Character and me.Character:FindFirstChild("Humanoid") then
+        local hum = me.Character.Humanoid
+        hum.UseJumpPower = false
+        hum.JumpHeight = jumpamount
+    end
+end)
+
+run.Heartbeat:Connect(function()
+    if cframespeed and me.Character and me.Character:FindFirstChild('Humanoid') and me.Character:FindFirstChild('HumanoidRootPart') then
+        local hum = me.Character.Humanoid
+        local hrp = me.Character.HumanoidRootPart
+        if hum.MoveDirection.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + (hum.MoveDirection * cframespeedamount)
+        end
+    end
+
+    if spin and me.Character and me.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = me.Character.HumanoidRootPart
+        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(spinspeed), 0)
+    end
+end)
+
 plrc:AddToggle("inv", {
     Text = "Invisible",
     Default = false,
@@ -1024,30 +1287,55 @@ plrc:AddToggle("inv", {
     end
 })
 
-local MenuGroup = tabs.settings:AddLeftGroupbox('Menu')
-MenuGroup:AddButton('Unload', function() Library:Unload() end)
-MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'End', NoUI = true, Text = 'Menu Keybind' })
-Library.ToggleKeybind = Options.MenuKeybind 
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
-ThemeManager:SetFolder('skidware.cc')
-SaveManager:SetFolder('skidware.cc/criminality')
-SaveManager:BuildConfigSection(tabs.settings)
-ThemeManager:ApplyToTab(tabs.settings)
-SaveManager:LoadAutoloadConfig()
-MenuGroup:AddToggle("Keybind", {
-	Text = "Key Bind",
-	Tooltip = "This is a tooltip",
-	DisabledTooltip = "I am disabled!",
+local autopickup = false
+local connection
 
-	Default = false,
-	Disabled = false,
-	Visible = true,
-	Risky = false,
+plrc:AddToggle("autopickup_toggle", {
+    Text = "Auto Pickup Money",
+    Default = false,
+    Callback = function(Value)
+        autopickup = Value
+        
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
 
-	Callback = function(Value)
-    	Library.KeybindFrame.Visible = Value 
-	end,
+        if autopickup then
+            local remote = ReplicatedStorage.Events:FindFirstChild('CZDPZUS')
+            local moneyfolder = workspace.Filter.SpawnedBread
+            local canpickup = true
+            local starttick = tick()
+
+            connection = run.RenderStepped:Connect(function()
+                local function getmony()
+                    local dist = 15
+                    local closest = nil
+                    if me.Character and me.Character:FindFirstChild('HumanoidRootPart') then
+                        for _, m in pairs(moneyfolder:GetChildren()) do
+                            if m and me.Character and me.Character:FindFirstChild('HumanoidRootPart') then
+                                local distance = (me.Character.HumanoidRootPart.Position - m.Position).Magnitude
+                                if distance < dist then
+                                    dist = distance
+                                    closest = m
+                                end
+                            end
+                        end
+                    end
+                    return closest
+                end
+                
+                local foundmoney = getmony()
+                if foundmoney and canpickup then
+                    remote:FireServer(foundmoney)
+                    canpickup = false
+                    starttick = tick()
+                end
+                
+                if not canpickup and tick() - starttick >= 1 then
+                    canpickup = true
+                end
+            end)
+        end
+    end
 })
