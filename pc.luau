@@ -277,8 +277,20 @@ local settings = {
 	selected_sound = '92570611018210',
     CheckWhiteList = false,
     bulletTracerEnabled = false,
-    tracerColor = Color3.new(1, 1, 1)
+    tracerColor = Color3.new(1, 1, 1),
+    fov_enabled = false,
+    fov_radius = 150,
+    fov_color = Color3.new(1, 1, 1)
 }
+
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1
+FOVCircle.NumSides = 100
+FOVCircle.Radius = settings.fov_radius
+FOVCircle.Filled = false
+FOVCircle.Visible = settings.fov_enabled
+FOVCircle.Color = settings.fov_color
+FOVCircle.Transparency = 1
 
 local sounds = {
 	['Rust'] = 92570611018210,
@@ -395,21 +407,29 @@ end
 
 local function GetClosestEnemy()
     if not me.Character or not me.Character:FindFirstChild("HumanoidRootPart") then return nil end
-    local closestEnemy, shortestDistance = nil, settings.distance
+    local closestEnemy, shortestDistance = nil, math.huge
     local myRootPos = me.Character.HumanoidRootPart.Position
+    
     for _, player in pairs(plrs:GetPlayers()) do
         if player == me or (settings.checkteam and player.Team == me.Team) then continue end
         local character = player.Character
         if not character or not character:FindFirstChild("Humanoid") then continue end
         if settings.checkdowned and character.Humanoid.Health <= 15 then continue end
+        
         local rootPart = character:FindFirstChild("HumanoidRootPart")
-        local head = character:FindFirstChild("Head")
-        if rootPart and head and character:FindFirstChildOfClass("Humanoid").Health > 15 then
+        if rootPart and character:FindFirstChildOfClass("Humanoid").Health > 15 then
             if settings.CheckWhiteList and table.find(whitelist, player) then continue end
-            local distance = (rootPart.Position - myRootPos).Magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                closestEnemy = player
+            
+            local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+            if onScreen then
+                local mouseDistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                if mouseDistance <= settings.fov_radius then
+                    local worldDist = (rootPart.Position - myRootPos).Magnitude
+                    if worldDist < settings.distance and mouseDistance < shortestDistance then
+                        shortestDistance = mouseDistance
+                        closestEnemy = player
+                    end
+                end
             end
         end
     end
@@ -467,6 +487,13 @@ end
 
 local soundList = {}
 for name, _ in pairs(sounds) do table.insert(soundList, name) end
+
+run.RenderStepped:Connect(function()
+    FOVCircle.Visible = settings.fov_enabled
+    FOVCircle.Radius = settings.fov_radius
+    FOVCircle.Position = UserInputService:GetMouseLocation()
+    FOVCircle.Color = settings.fov_color
+end)
 
 run.Heartbeat:Connect(function()
     if not settings.ragebot then return end
@@ -1118,8 +1145,13 @@ rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Call
 rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) settings.sound = Value end })
 rage:AddToggle('ragehit', { Text = 'Hit Log', Default = false, Callback = function(Value) settings.hitlog = Value end })
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
+rage:AddToggle('ragefov', { Text = 'FOV Circle', Default = false, Callback = function(Value) settings.fov_enabled = Value end }):AddColorPicker('fov color rage', {
+    Default = Color3.new(1, 1, 1), Title = 'FOV Color', Transparency = 0,
+    Callback = function(Value) settings.fov_color = Value end
+})
 rage:AddDropdown("hitsound_dropdown", { Text = "Hit Sound List", Values = soundList, Default = "Default", Multi = false, Callback = function(v) settings.selected_sound = sounds[v] end })
 rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Compact = false, Callback = function(Value) settings.distance = Value end })
+rage:AddSlider('fovradius', { Text = 'FOV Radius', Default = 150, Min = 0, Max = 500, Rounding = 1, Compact = false, Callback = function(Value) settings.fov_radius = Value end })
 rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) settings.shootspeed = Value end })
 rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) settings.fireinterval = Value end })
 
