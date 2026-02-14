@@ -274,9 +274,18 @@ local settings = {
     shootspeed = 1,
     hitlog = false,
 	sound = false,
+	selected_sound = '92570611018210',
     CheckWhiteList = false,
     bulletTracerEnabled = false,
     tracerColor = Color3.new(1, 1, 1)
+}
+
+local sounds = {
+	['Rust'] = 92570611018210,
+	['Skeet'] = 83717596220569,
+	['Neverlose'] = 6607204501,
+	['Minecraft'] = 136876055001267,
+	['Headshot'] = 140572774008234
 }
 
 local lastshottime = 0
@@ -302,7 +311,7 @@ end
 local function createSound()
 	if not settings.sound then return end
     local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://92570611018210"
+    sound.SoundId = "rbxassetid://" .. settings.selected_sound
     sound.Volume = 1
     sound.Parent = camera
     sound:Play()
@@ -450,6 +459,9 @@ local function Shoot(target)
         events.GNX_R:FireServer(tick(), "KLWE89U0", tool)
     end)
 end
+
+local soundList = {}
+for name, _ in pairs(sounds) do table.insert(soundList, name) end
 
 run.Heartbeat:Connect(function()
     if not settings.ragebot then return end
@@ -1101,6 +1113,7 @@ rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Call
 rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) settings.sound = Value end })
 rage:AddToggle('ragehit', { Text = 'Hit Log', Default = false, Callback = function(Value) settings.hitlog = Value end })
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
+rage:AddDropdown("hitsound_dropdown", { Text = "Hit Sound List", Values = soundList, Default = "Default", Multi = false, Callback = function(v) settings.selected_sound = sounds[v] end })
 rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Compact = false, Callback = function(Value) settings.distance = Value end })
 rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) settings.shootspeed = Value end })
 rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) settings.fireinterval = Value end })
