@@ -362,6 +362,8 @@ local function FindWallbangPoint(origin, targetPart)
     if not origin or not targetPart then return nil end
     local base = targetPart.Position
     local rp = MakeRaycastParams()
+    local MaxDistance = 10000
+
     for i = 1, WallbangSamples do
         local angle = (i / WallbangSamples) * math.pi * 2
         local r = WallbangRadius * (0.6 + math.random() * 0.8)
@@ -369,8 +371,11 @@ local function FindWallbangPoint(origin, targetPart)
         local offset = Vector3.new(math.cos(angle) * r, yOff, math.sin(angle) * r)
         local testPoint = base + offset
         local dir = (testPoint - origin)
+        
         if dir.Magnitude > 0 then
-            local result = workspace:Raycast(origin, dir, rp)
+            local extendedDir = dir.Unit * MaxDistance
+            local result = workspace:Raycast(origin, extendedDir, rp)
+            
             if result then
                 if result.Instance and result.Instance:IsDescendantOf(targetPart.Parent) then
                     return testPoint
