@@ -1145,6 +1145,10 @@ local fovcamera = false
 local fovcameraamount = 70
 local cframespeed = false
 local cframespeedamount = 1
+local spin = false
+local spinspeed = 10
+local jumpheight = false
+local jumpamount = 7.5
 
 plrc:AddToggle("fovcamera", {
     Text = "Field Of View",
@@ -1195,6 +1199,52 @@ plrc:AddSlider('cframespeedamount', {
     end
 })
 
+plrc:AddToggle("jumpheight", {
+    Text = "Jump Height",
+    Default = false,
+    Disabled = false,
+    Visible = true,
+    Risky = false,
+    Callback = function(Value)
+        jumpheight = Value
+    end
+})
+
+plrc:AddSlider('jumpamount', { 
+    Text = 'Jump Height Amount', 
+    Default = 7.5, 
+    Min = 0, 
+    Max = 25, 
+    Rounding = 2, 
+    Compact = false, 
+    Callback = function(Value) 
+        jumpamount = Value 
+    end
+})
+
+plrc:AddToggle("spin", {
+    Text = "Spin",
+    Default = false,
+    Disabled = false,
+    Visible = true,
+    Risky = false,
+    Callback = function(Value)
+        spin = Value
+    end
+})
+
+plrc:AddSlider('spinspeed', { 
+    Text = 'Spin Speed', 
+    Default = 10, 
+    Min = 0, 
+    Max = 25, 
+    Rounding = 2, 
+    Compact = false, 
+    Callback = function(Value) 
+        spinspeed = Value 
+    end
+})
+
 run.RenderStepped:Connect(function()
     if fovcamera then
         camera.FieldOfView = fovcameraamount
@@ -1208,6 +1258,21 @@ run.Heartbeat:Connect(function()
 		if hum.MoveDirection.Magnitude > 0 then
 			hrp.CFrame = hrp.CFrame + (hum.MoveDirection * cframespeedamount)
 		end
+	end)
+end)
+
+run.RenderStepped:Connect(function()
+	if jumpheight and me.Character and me.Character:FindFirstChild("Humanoid") then
+		local hum = me.Character.Humanoid
+		hum.UseJumpPower = false
+		hum.JumpHeight = jumpamount
+	end
+end)
+
+run.Heartbeat:Connect(function()
+	if spin and me.Character and me.Character:FindFirstChild("HumanoidRootPart") then
+		local hrp = me.Character.HumanoidRootPart
+		hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(spinspeed), 0)
 	end
 end)
 
