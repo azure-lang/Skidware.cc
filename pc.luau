@@ -263,6 +263,7 @@ task.spawn(aimbotLoop)
 
 local rep = game:GetService("ReplicatedStorage")
 local events = rep:WaitForChild("Events")
+local mouse = me:GetMouse()
 
 local settings = {
     ragebot = false,
