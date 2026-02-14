@@ -1252,6 +1252,59 @@ plrc:AddToggle("inv", {
     end
 })
 
+local autopickup = false
+local connection
+
+plrc:AddToggle("autopickup_toggle", {
+    Text = "Auto Pickup Money",
+    Default = false,
+    Callback = function(Value)
+        autopickup = Value
+        
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+
+        if autopickup then
+            local remote = ReplicatedStorage.Events:FindFirstChild('CZDPZUS')
+            local moneyfolder = workspace.Filter.SpawnedBread
+            local canpickup = true
+            local starttick = tick()
+
+            connection = run.RenderStepped:Connect(function()
+                local function getmony()
+                    local dist = 15
+                    local closest = nil
+                    if me.Character and me.Character:FindFirstChild('HumanoidRootPart') then
+                        for _, m in pairs(moneyfolder:GetChildren()) do
+                            if m and me.Character and me.Character:FindFirstChild('HumanoidRootPart') then
+                                local distance = (me.Character.HumanoidRootPart.Position - m.Position).Magnitude
+                                if distance < dist then
+                                    dist = distance
+                                    closest = m
+                                end
+                            end
+                        end
+                    end
+                    return closest
+                end
+                
+                local foundmoney = getmony()
+                if foundmoney and canpickup then
+                    remote:FireServer(foundmoney)
+                    canpickup = false
+                    starttick = tick()
+                end
+                
+                if not canpickup and tick() - starttick >= 1 then
+                    canpickup = true
+                end
+            end)
+        end
+    end
+})
+
 local MenuGroup = tabs.settings:AddLeftGroupbox('Menu')
 MenuGroup:AddButton('Unload', function() Library:Unload() end)
 MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Q', NoUI = true, Text = 'Menu Keybind' })
