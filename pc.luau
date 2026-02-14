@@ -1148,14 +1148,11 @@ local cframespeedamount = 1
 local spin = false
 local spinspeed = 10
 local jumpheight = false
-local jumpamount = 7.5
+local jumpamount = 7.2
 
 plrc:AddToggle("fovcamera", {
     Text = "Field Of View",
     Default = false,
-    Disabled = false,
-    Visible = true,
-    Risky = false,
     Callback = function(Value)
         fovcamera = Value
         if not Value then
@@ -1166,114 +1163,76 @@ plrc:AddToggle("fovcamera", {
 
 plrc:AddSlider('fovcameraamount', { 
     Text = 'Field Of View Amount', 
-    Default = 70, 
-    Min = 0, 
-    Max = 120, 
-    Rounding = 2, 
-    Compact = false, 
-    Callback = function(Value) 
-        fovcameraamount = Value 
-    end 
+    Default = 70, Min = 0, Max = 120, Rounding = 2, 
+    Callback = function(Value) fovcameraamount = Value end 
 })
 
 plrc:AddToggle("cframespeed", {
     Text = "CFrame Speed",
     Default = false,
-    Disabled = false,
-    Visible = true,
-    Risky = false,
-    Callback = function(Value)
-        cframespeed = Value
-    end
+    Callback = function(Value) cframespeed = Value end
 })
 
 plrc:AddSlider('cframespeedamount', { 
     Text = 'CFrame Speed Amount', 
-    Default = 1, 
-    Min = 0, 
-    Max = 5, 
-    Rounding = 2, 
-    Compact = false, 
-    Callback = function(Value) 
-        cframespeedamount = Value 
-    end
+    Default = 1, Min = 0, Max = 5, Rounding = 2, 
+    Callback = function(Value) cframespeedamount = Value end
 })
 
 plrc:AddToggle("jumpheight", {
     Text = "Jump Height",
     Default = false,
-    Disabled = false,
-    Visible = true,
-    Risky = false,
     Callback = function(Value)
         jumpheight = Value
+        if not Value and me.Character and me.Character:FindFirstChild("Humanoid") then
+            me.Character.Humanoid.JumpHeight = 7.2
+        end
     end
 })
 
 plrc:AddSlider('jumpamount', { 
     Text = 'Jump Height Amount', 
-    Default = 7.5, 
-    Min = 0, 
-    Max = 25, 
-    Rounding = 2, 
-    Compact = false, 
-    Callback = function(Value) 
-        jumpamount = Value 
-    end
+    Default = 7.2, Min = 0, Max = 50, Rounding = 2, 
+    Callback = function(Value) jumpamount = Value end
 })
 
 plrc:AddToggle("spin", {
     Text = "Spin",
     Default = false,
-    Disabled = false,
-    Visible = true,
-    Risky = false,
-    Callback = function(Value)
-        spin = Value
-    end
+    Callback = function(Value) spin = Value end
 })
 
 plrc:AddSlider('spinspeed', { 
     Text = 'Spin Speed', 
-    Default = 10, 
-    Min = 0, 
-    Max = 25, 
-    Rounding = 2, 
-    Compact = false, 
-    Callback = function(Value) 
-        spinspeed = Value 
-    end
+    Default = 10, Min = 0, Max = 100, Rounding = 2, 
+    Callback = function(Value) spinspeed = Value end
 })
 
 run.RenderStepped:Connect(function()
     if fovcamera then
         camera.FieldOfView = fovcameraamount
     end
+    
+    if jumpheight and me.Character and me.Character:FindFirstChild("Humanoid") then
+        local hum = me.Character.Humanoid
+        hum.UseJumpPower = false
+        hum.JumpHeight = jumpamount
+    end
 end)
 
 run.Heartbeat:Connect(function()
-	if cframespeed and me.Character and me.Character:FindFirstChild('Humanoid') and me.Character:FindFirstChild('HumanoidRootPart') then
-		local hum = me.Character.Humanoid
-		local hrp = me.Character.HumanoidRootPart
-		if hum.MoveDirection.Magnitude > 0 then
-			hrp.CFrame = hrp.CFrame + (hum.MoveDirection * cframespeedamount)
-		end
-	end)
-end)
+    if cframespeed and me.Character and me.Character:FindFirstChild('Humanoid') and me.Character:FindFirstChild('HumanoidRootPart') then
+        local hum = me.Character.Humanoid
+        local hrp = me.Character.HumanoidRootPart
+        if hum.MoveDirection.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + (hum.MoveDirection * cframespeedamount)
+        end
+    end
 
-run.RenderStepped:Connect(function()
-	if jumpheight and me.Character and me.Character:FindFirstChild("Humanoid") then
-		local hum = me.Character.Humanoid
-		hum.UseJumpPower = false
-		hum.JumpHeight = jumpamount
-	end
-end)
-
-run.Heartbeat:Connect(function()
-	if spin and me.Character and me.Character:FindFirstChild("HumanoidRootPart") then
-		local hrp = me.Character.HumanoidRootPart
-		hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(spinspeed), 0)
-	end
+    if spin and me.Character and me.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = me.Character.HumanoidRootPart
+        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(spinspeed), 0)
+    end
 end)
 
 plrc:AddToggle("inv", {
