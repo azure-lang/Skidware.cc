@@ -1310,6 +1310,29 @@ plrc:AddToggle("autopickup_toggle", {
     end
 })
 
+Library:SetWatermarkVisibility(true)
+local FrameTimer = tick()
+local FrameCounter = 0;
+local FPS = 60;
+
+local WatermarkConnection = RunService.RenderStepped:Connect(function()
+    FrameCounter += 1;
+
+    if (tick() - FrameTimer) >= 1 then
+        FPS = FrameCounter;
+        FrameTimer = tick();
+        FrameCounter = 0;
+    end;
+
+    local TimeString = os.date("%I:%M%p")
+
+    Library:SetWatermark(('Skidware.cc | Criminality | %s | %s fps | %s ms'):format(
+        TimeString,
+        math.floor(FPS),
+        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
+    ));
+end);
+
 local MenuGroup = tabs.settings:AddLeftGroupbox('Menu')
 MenuGroup:AddButton('Unload', function() Library:Unload() end)
 MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Q', NoUI = true, Text = 'Menu Keybind' })
