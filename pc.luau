@@ -859,7 +859,7 @@ _G.IsInvisEnabled = function() return InvisEnabled end
 
 local function getplayers()
     local names = {}
-    for _, p in ipairs(plrs:GetPlayers())
+    for _, p in ipairs(plrs:GetPlayers()) do
         if p ~= me then
             table.insert(names, p.Name)
         end
@@ -882,11 +882,11 @@ local whitedrop = whitelistsec:AddDropdown('whitelistdrop', {
 })
 
 plrs.PlayerAdded:Connect(function()
-    whitedrop:SetValues(getplayers())
+    whitedrop:Refresh(getplayers())
 end)
 
 plrs.PlayerRemoving:Connect(function()
-    whitedrop:SetValues(getplayers())
+    whitedrop:Refresh(getplayers())
 end)
 
 local parts_list = {
