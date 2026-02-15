@@ -56,6 +56,7 @@ local functions = {
     SilentAim = false,
     aimbot = false,
     wall = false,
+	checkwhite = false
     smooth = false,
     smoothsize = 0.1,
     randomtime = 1,
@@ -77,6 +78,7 @@ local Meele = {
     Toggle = false,
     Team = false,
     Downed = false,
+	White = false,
     FF = false,
     Anim = false,
     Target = {"Head"},
@@ -88,8 +90,11 @@ local cockie = {
     SilentAimCircle = nil
 }
 
+local whitelist = {}
+
 local vis = tabs.visuals:AddLeftGroupbox("Player Visuals")
 local silent = tabs.main:AddLeftGroupbox("Silent Aim")
+local whitelistsec = tabs.main:AddRightGroupbox("Whitelist")
 local aimbot = tabs.main:AddRightGroupbox("Aimbot")
 local rage = tabs.main:AddLeftGroupbox("Rage Bot")
 local meele = tabs.main:AddRightGroupbox("Meele Aura")
@@ -138,6 +143,7 @@ local function SetupSilentAim()
             if a ~= LocalPlayer and a.Character and a.Character:FindFirstChild("HumanoidRootPart") then
                 if SectionSettings.SilentAim.CheckDowned and IsPlayerDowned(a) then continue end
                 if SectionSettings.SilentAim.CheckTeam and a.Team == LocalPlayer.Team then continue end
+				if SectionSettings.SilentAim.CheckWhitelist and table.find(whitelist, a.Name) then continue end
                 if SectionSettings.SilentAim.CheckFF and a.Character:FindFirstChildOfClass("ForceField") then continue end
 
                 local hrp = a.Character.HumanoidRootPart
@@ -227,6 +233,7 @@ local function aimbotLoop()
                     if functions.team and p.Team == LocalPlayer.Team then continue end
                     if functions.downed and IsPlayerDowned(p) then continue end
                     if functions.ff and p.Character:FindFirstChild("ForceField") then continue end
+					if functions.checkwhite and table.find(whitelist, p.Name) then continue end
                     local bodyPartName = functions.aimpart and functions.aimpart[1] or "Head"
                     if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(bodyPartName) then
                         local partToAim = p.Character[bodyPartName]
@@ -302,7 +309,6 @@ local sounds = {
 }
 
 local lastshottime = 0
-local whitelist = {}
 local WallbangSamples = 72
 local WallbangRadius = 10
 local WallbangHeight = 6
@@ -419,7 +425,7 @@ local function GetClosestEnemy()
         
         local rootPart = character:FindFirstChild("HumanoidRootPart")
         if rootPart and character:FindFirstChildOfClass("Humanoid").Health > 15 then
-            if settings.CheckWhiteList and table.find(whitelist, player) then continue end
+            if settings.CheckWhiteList and table.find(whitelist, player.Name) then continue end
             
             local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
             if onScreen then
@@ -613,6 +619,7 @@ local function loop()
                 if Meele.Team and p.Team == me.Team then continue end
                 if Meele.Downed and hum.Health < 15 then continue end
                 if Meele.FF and c:FindFirstChildOfClass('ForceField') then continue end
+				if Meele.White and table.find(whitelist, p.Name) then continue end
                 
                 if (targetHrp.Position - hrp.Position).Magnitude <= Meele.Distance then
                     attack(c)
@@ -850,6 +857,38 @@ _G.Invis_Enable = Invis_Enable
 _G.Invis_Disable = Invis_Disable
 _G.IsInvisEnabled = function() return InvisEnabled end
 
+local function getplayers()
+    local names = {}
+    for _, p in ipairs(plrs:GetPlayers())
+        if p ~= me then
+            table.insert(names, p.Name)
+        end
+    end
+    return names
+end
+
+local function iswhitelisted(player)
+    return table.find(whitelist, player.Name) ~= nil
+end
+
+local whitedrop = whitelistsec:AddDropdown('whitelistdrop', {
+    Title = 'Whitelist Players',
+    Values = getplayers(),
+    Default = {},
+    Multi = true,
+    Callback = function(sel)
+        whitelist = sel
+    end
+})
+
+plrs.PlayerAdded:Connect(function()
+    whitedrop:SetValues(getplayers())
+end)
+
+plrs.PlayerRemoving:Connect(function()
+    whitedrop:SetValues(getplayers())
+end)
+
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
 }
@@ -1067,6 +1106,7 @@ silent:AddToggle('v2', { Text = 'Check Team', Default = false, Callback = functi
 silent:AddToggle('v3_wall', { Text = 'Check Wall', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckWall = Value end })
 silent:AddToggle('v4', { Text = 'Check Downed', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckDowned = Value end })
 silent:AddToggle('v3_ff', { Text = 'Check Force Field', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckFF = Value end })
+silent:AddToggle('v3_white', { Text = 'Check Whitelist', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckWhitelist = Value end })
 
 silent:AddDropdown('AimPartDropdown', {
     Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
@@ -1108,6 +1148,7 @@ aimbot:AddToggle('aimbotteam', { Text = 'Check Team', Default = false, Callback 
 aimbot:AddToggle('aimbotwall', { Text = 'Check Wall', Default = false, Callback = function(Value) functions.wall = Value end })
 aimbot:AddToggle('aimbotdowned', { Text = 'Check Downed', Default = false, Callback = function(Value) functions.downed = Value end })
 aimbot:AddToggle('aimbotff', { Text = 'Check Force Field', Default = false, Callback = function(Value) functions.ff = Value end })
+aimbot:AddToggle('aimbotff', { Text = 'Check Force Field', Default = false, Callback = function(Value) functions.checkwhite = Value end })
 
 aimbot:AddDropdown('AimPartDropdown1', {
     Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
@@ -1143,6 +1184,7 @@ rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(V
 rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) settings.checkteam = Value end })
 rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) settings.checkwall = Value end })
 rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) settings.checkdowned = Value end })
+rage:AddToggle('ragewhitelistcheck', { Text = 'Check Whitelist', Default = false, Callback = function(Value) settings.CheckWhiteList = Value end })
 rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) settings.sound = Value end })
 rage:AddToggle('ragehit', { Text = 'Hit Log', Default = false, Callback = function(Value) settings.hitlog = Value end })
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
@@ -1166,6 +1208,7 @@ meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function
 meele:AddToggle('meeleshowanim', { Text = 'Show Animation', Default = false, Callback = function(Value) Meele.Anim = Value end })
 meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = function(Value) Meele.Team = Value end })
 meele:AddToggle('meeledowned', { Text = 'Check Downed', Default = false, Callback = function(Value) Meele.Downed = Value end })
+meele:AddToggle('meelewhite', { Text = 'Check Whitelist', Default = false, Callback = function(Value) Meele.White = Value end })
 
 meele:AddDropdown('AimPartDropdown', {
     Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
