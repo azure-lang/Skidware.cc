@@ -1,257 +1,4 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local StarterGui = game:GetService("StarterGui")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local me = Players.LocalPlayer
-local plrs = game:GetService("Players")
-local Camera = Workspace.CurrentCamera
-local camera = Workspace.CurrentCamera
-local run = game:GetService("RunService")
-
-local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
-
-local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
-local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
-local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
-
-local window = Library:CreateWindow({
-    Title = "Skidware.cc",
-    Center = true,
-    AutoShow = true,
-    TabPadding = 8,
-    MenuFadeTime = 0.2
-})
-
-local tabs = {
-    main = window:AddTab("Combat"),
-    visuals = window:AddTab("Visuals"),
-	player = window:AddTab("Player"),
-    settings = window:AddTab("Settings")
-}
-
-local SectionSettings = {
-    SilentAim = {
-        Toggle = false,
-        ShowFOV = false,
-        DrawSize = 130,
-        DrawColor = Color3.new(1, 1, 1),
-        Thickness = 1,
-        TargetParts = {"Head"},
-        CheckDowned = false,
-        CheckWall = false,
-        CheckFF = false,
-        CheckTeam = false,
-        CheckWhiteList = false,
-        HitChance = 100,
-        HitChanceToggle = false,
-        Filled = false,
-        RandomTime = 1
-    }
-}
-
-local functions = {
-    SilentAim = false,
-    aimbot = false,
-    wall = false,
-	checkwhite = false, -- Corrigido: Adicionado vírgula
-    smooth = false,
-    smoothsize = 0.1,
-    randomtime = 1,
-    fovcolor = Color3.new(1, 1, 1), 
-    thickness = 1,
-    fovfilled = false,
-    aimpart = {"Head"},
-    fov = false,
-    fovsize = 100,
-    downed = false,
-    ff = false,
-    team = false,	
-	meleeauraF = false,
-	invisible = false,
-    RageBot = false
-}
-
-local Meele = {
-    Toggle = false,
-    Team = false,
-    Downed = false,
-	White = false,
-    FF = false,
-    Anim = false,
-    Target = {"Head"},
-    Distance = 15,
-	Randomtime = 1
-}
-
-local cockie = {
-    SilentAimCircle = nil
-}
-
-local whitelist = {}
-
-local vis = tabs.visuals:AddLeftGroupbox("Player Visuals")
-local silent = tabs.main:AddLeftGroupbox("Silent Aim")
-local whitelistsec = tabs.main:AddRightGroupbox("Whitelist")
-local aimbot = tabs.main:AddRightGroupbox("Aimbot")
-local rage = tabs.main:AddLeftGroupbox("Rage Bot")
-local meele = tabs.main:AddRightGroupbox("Meele Aura")
-local plrc = tabs.player:AddLeftGroupbox("Player Modifications")
-local viss = tabs.visuals:AddRightGroupbox("Player Visuals Settings")
-local visw = tabs.visuals:AddRightGroupbox("World Visuals")
-local visp = tabs.visuals:AddLeftGroupbox('View Model Visuals')
-
-local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/S3f8PA7Y"))()
-
-local function IsPlayerDowned(p)
-    if not p or not p.Character then return false end
-    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-    if hum and hum.Health <= 15 then return true end
-    
-    local cs = p.Character:FindFirstChild("CharStats")
-    if cs then
-        local downed = cs:FindFirstChild("Downed")
-        if downed and typeof(downed.Value) == "boolean" then
-            return downed.Value
-        end
-    end
-    return false
-end
-
--- Definição de eventos para evitar erro de variável nula
-local rep_storage = game:GetService("ReplicatedStorage")
-local events_folder = rep_storage:FindFirstChild("Events")
-local events2_folder = rep_storage:FindFirstChild("Events2")
-
-local function SetupSilentAim()
-    if cockie.SilentAimCircle then cockie.SilentAimCircle:Remove() end
-    
-    cockie.SilentAimCircle = Drawing.new("Circle")
-    cockie.SilentAimCircle.Color = SectionSettings.SilentAim.DrawColor
-    cockie.SilentAimCircle.Thickness = SectionSettings.SilentAim.Thickness
-    cockie.SilentAimCircle.NumSides = 50
-    cockie.SilentAimCircle.Radius = SectionSettings.SilentAim.DrawSize
-    cockie.SilentAimCircle.Filled = SectionSettings.SilentAim.Filled
-    cockie.SilentAimCircle.Visible = false
-
-    local target = nil
-    local VisualizeEvent = events2_folder and events2_folder:WaitForChild("Visualize", 5)
-
-    local function GetClosest()
-        target = nil
-        local shortest = SectionSettings.SilentAim.ShowFOV and SectionSettings.SilentAim.DrawSize or math.huge
-        local center = UserInputService:GetMouseLocation()
-
-        for _, a in pairs(Players:GetPlayers()) do
-            if a ~= LocalPlayer and a.Character and a.Character:FindFirstChild("HumanoidRootPart") then
-                if SectionSettings.SilentAim.CheckDowned and IsPlayerDowned(a) then continue end
-                if SectionSettings.SilentAim.CheckTeam and a.Team == LocalPlayer.Team then continue end
-				if SectionSettings.SilentAim.CheckWhitelist and table.find(whitelist, a.Name) then continue end
-                if SectionSettings.SilentAim.CheckFF and a.Character:FindFirstChildOfClass("ForceField") then continue end
-
-                local hrp = a.Character.HumanoidRootPart
-                local screenpos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-
-                if onScreen then
-                    local dist = (center - Vector2.new(screenpos.X, screenpos.Y)).Magnitude
-                    if dist < shortest then
-                        shortest = dist
-                        target = a
-                    end
-                end
-            end
-        end
-    end
-
-    RunService.RenderStepped:Connect(function()
-        if cockie.SilentAimCircle then
-            local pos = UserInputService:GetMouseLocation()
-            cockie.SilentAimCircle.Visible = functions.SilentAim and SectionSettings.SilentAim.ShowFOV
-            cockie.SilentAimCircle.Radius = SectionSettings.SilentAim.DrawSize
-            cockie.SilentAimCircle.Thickness = SectionSettings.SilentAim.Thickness
-            cockie.SilentAimCircle.Filled = SectionSettings.SilentAim.Filled
-            cockie.SilentAimCircle.Color = SectionSettings.SilentAim.DrawColor
-            cockie.SilentAimCircle.Position = pos
-        end
-        if functions.SilentAim then
-            GetClosest()
-        end
-    end)
-
-    if VisualizeEvent then
-        VisualizeEvent.Event:Connect(function(_, ShotCode, _, Gun, _, StartPos, BulletsPerShot)
-            if not functions.SilentAim or not target or not target.Character then return end
-            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChildOfClass("Tool") then return end
-
-            if SectionSettings.SilentAim.HitChanceToggle then
-                if math.random(1, 100) > SectionSettings.SilentAim.HitChance then return end
-            end
-
-            local possibleParts = SectionSettings.SilentAim.TargetParts
-            local parts_name = possibleParts[1] or "Head"
-            local targetPart = target.Character:FindFirstChild(parts_name)
-            
-            if targetPart and events_folder then
-                local partPos = targetPart.Position
-                local bulletCount = type(BulletsPerShot) == "table" and #BulletsPerShot or 1
-                
-                task.wait(0.005)
-                for i = 1, math.clamp(bulletCount, 1, 100) do
-                    local dir = (partPos - StartPos).Unit
-                    -- Corrigido: Referência correta ao remote
-                    if events_folder:FindFirstChild("ZFKLF__H") then
-                        events_folder.ZFKLF__H:FireServer("🧈", Gun, ShotCode, i, targetPart, partPos, dir)
-                    end
-                end
-
-                if Gun:FindFirstChild("Hitmarker") then
-                    Gun.Hitmarker:Fire(targetPart)
-                end
-            end
-        end)
-    end
-end
-SetupSilentAim() -- Corrigido: Chamando a função para inicializar
-
-local fovCircle = Drawing.new("Circle")
-fovCircle.NumSides = 50
-fovCircle.Filled = false
-fovCircle.Visible = false
-
-run.RenderStepped:Connect(function()
-    local pos = UserInputService:GetMouseLocation()
-    fovCircle.Visible = functions.fov
-    fovCircle.Radius = functions.fovsize
-    fovCircle.Color = functions.fovcolor
-    fovCircle.Filled = functions.fovfilled
-    fovCircle.Thickness = functions.thickness
-    fovCircle.Position = pos
-end)
-
-
-local function aimbotLoop()
-    while true do 
-        if functions.aimbot then
-            local character = LocalPlayer.Character
-            if character and character:FindFirstChild('Head') then
-                local targetPart = nil
-                local shortestDistance = functions.fovsize
-                local center = UserInputService:GetMouseLocation()
-                
-                for _, p in pairs(Players:GetPlayers()) do
-                    if functions.team and p.Team == LocalPlayer.Team then continue end
-                    if functions.downed and IsPlayerDowned(p) then continue end
-                    if functions.ff and p.Character:FindFirstChild("ForceField") then continue end
-					if functions.checkwhite and table.find(whitelist, p.Name) then continue end
-                    local bodyPartName = functions.aimpart and functions.aimpart[1] or "Head"
-                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(bodyPartName) then
-                        local partToAim = p.Character[bodyPartName]
-                        local pos, onscreen = camera:WorldToViewportPoint(partToAim.Position)
-                        if onscreen then
-                            local mousedistance = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                            if mousedistance <= functions.fovsize then
+             if mousedistance <= functions.fovsize then
                                 local cansee = true
                                 if functions.wall then
                                     local rayParams = RaycastParams.new()
@@ -843,7 +590,6 @@ local function SetupSilentAim()
             if a ~= LocalPlayer and a.Character and a.Character:FindFirstChild("HumanoidRootPart") then
                 if SectionSettings.SilentAim.CheckDowned and IsPlayerDowned(a) then continue end
                 if SectionSettings.SilentAim.CheckTeam and a.Team == LocalPlayer.Team then continue end
-				if SectionSettings.SilentAim.CheckWhitelist and table.find(whitelist, a.Name) then continue end
                 if SectionSettings.SilentAim.CheckFF and a.Character:FindFirstChildOfClass("ForceField") then continue end
 
                 local hrp = a.Character.HumanoidRootPart
@@ -939,7 +685,6 @@ local function aimbotLoop()
                     if functions.team and p.Team == LocalPlayer.Team then continue end
                     if functions.downed and IsPlayerDowned(p) then continue end
                     if functions.ff and p.Character:FindFirstChild("ForceField") then continue end
-					if functions.checkwhite and table.find(whitelist, p.Name) then continue end
                     local bodyPartName = functions.aimpart and functions.aimpart[1] or "Head"
                     if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild(bodyPartName) then
                         local partToAim = p.Character[bodyPartName]
@@ -1131,7 +876,6 @@ local function GetClosestEnemy()
         
         local rootPart = character:FindFirstChild("HumanoidRootPart")
         if rootPart and character:FindFirstChildOfClass("Humanoid").Health > 15 then
-            if settings.CheckWhiteList and table.find(whitelist, player.Name) then continue end
             
             local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
             if onScreen then
@@ -1314,7 +1058,6 @@ run.RenderStepped:Connect(function()
             if Meele.Team and p.Team == me.Team then continue end
             if Meele.Downed and hum.Health < 15 then continue end
             if Meele.FF and c:FindFirstChildOfClass('ForceField') then continue end
-			if Meele.White and table.find(whitelist, p.Name) then continue end
             
             if (targetHrp.Position - hrp.Position).Magnitude <= Meele.Distance then
                 attack(c)
@@ -1329,72 +1072,225 @@ local Service = setmetatable({}, {
     __index = function(_, k) return cloneref(game:GetService(k)) end
 })
 
-local Character = Player and Player.Character or nil
-local Humanoid, HumanoidRootPart
+repeat task.wait() until game:IsLoaded()
+local Players = Service.Players
+local Player = Players and Players.LocalPlayer
+repeat task.wait() Player = Players and Players.LocalPlayer until Player
 
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid, HumanoidRootPart
 local function UpdateCharacterReferences()
-    Character = me.Character
+    Character = Player.Character
     if Character then
         HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
         Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    else
+        HumanoidRootPart = nil
+        Humanoid = nil
     end
 end
+UpdateCharacterReferences()
 
+local Invis_Fixed = true
 local InvisEnabled = false
 local Track = nil
 local Animation = Instance.new("Animation")
 Animation.AnimationId = "rbxassetid://215384594"
 
+local RunService = Service.RunService
+local Heartbeat = RunService and RunService.Heartbeat
+local RenderStepped = RunService and RunService.RenderStepped
+local StarterGui = Service.StarterGui
+local CoreGui = Service.CoreGui
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "InvisWarningGUI"
+GUI.ResetOnSpawn = false
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.Parent = CoreGui
+
+local WarnLabel = Instance.new("TextLabel", GUI)
+WarnLabel.Text = "⚠️You are visible⚠️"
+WarnLabel.Visible = false
+WarnLabel.Size = UDim2.new(0, 200, 0, 30)
+WarnLabel.Position = UDim2.new(0.5, -100, 0.85, 0)
+WarnLabel.BackgroundTransparency = 1
+WarnLabel.Font = Enum.Font.GothamSemibold
+WarnLabel.TextSize = 24
+WarnLabel.TextColor3 = Color3.fromRGB(255,255,0)
+WarnLabel.TextStrokeTransparency = 0.5
+WarnLabel.ZIndex = 10
+
+local function Grounded()
+    return Humanoid and Humanoid:IsDescendantOf(workspace) and Humanoid.FloorMaterial ~= Enum.Material.Air
+end
+
 local function LoadAndPrepareTrack()
-    if Track then pcall(function() Track:Stop() end) end
+    if Track then
+        pcall(function() Track:Stop() end)
+        Track = nil
+    end
     if Humanoid then
         local ok, res = pcall(function() return Humanoid:LoadAnimation(Animation) end)
-        if ok then Track = res end
+        if ok and res then
+            Track = res
+            Track.Priority = Enum.AnimationPriority.Action4
+        else
+            Track = nil
+        end
+    else
+        Track = nil
     end
 end
 
 local function Invis_Disable()
+    if not InvisEnabled then return end
     InvisEnabled = false
     if Track then pcall(function() Track:Stop() end) end
+    if Humanoid then pcall(function() workspace.CurrentCamera.CameraSubject = Humanoid end) end
     if Character then
         for _, v in pairs(Character:GetDescendants()) do
-            if v:IsA("BasePart") then v.Transparency = 0 end
+            if v:IsA("BasePart") and v.Transparency == 0.5 then
+                v.Transparency = 0
+            end
         end
     end
+    WarnLabel.Visible = false
 end
 
 local function Invis_Enable()
+    if InvisEnabled or not Invis_Fixed then return end
     UpdateCharacterReferences()
-    if not Character or not Humanoid then return end
+    if not Character or not Humanoid or not HumanoidRootPart then return end
+    if not Character:FindFirstChild("Torso") then
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility FAILED", Text="Feature requires R6 Avatar.", Duration=5})
+        end)
+        return
+    end
     InvisEnabled = true
+    pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end)
     LoadAndPrepareTrack()
 end
 
-local function getplayers()
-    local names = {}
-    for _, p in ipairs(plrs:GetPlayers()) do
-        if p ~= me then table.insert(names, p.Name) end
+Player.CharacterAdded:Connect(function(newChar)
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    task.wait()
+    UpdateCharacterReferences()
+    if not Humanoid then
+        task.wait(0.5)
+        UpdateCharacterReferences()
+        if not Humanoid then
+            Invis_Fixed = false
+            if InvisEnabled then Invis_Disable() end
+            pcall(function()
+                StarterGui:SetCore("SendNotification", {Title="Invisibility Error", Text="Could not verify character type.", Duration=5})
+            end)
+            return
+        end
     end
-    return names
+    if Humanoid.RigType ~= Enum.HumanoidRigType.R6 then
+        Invis_Fixed = false
+        if InvisEnabled then Invis_Disable() end
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility Warning", Text="Non-R6 Avatar detected. Invisibility disabled.", Duration=5})
+        end)
+        return
+    else
+        Invis_Fixed = true
+    end
+    if InvisEnabled then
+        if HumanoidRootPart then pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end) end
+        LoadAndPrepareTrack()
+    end
+end)
+
+Player.CharacterRemoving:Connect(function()
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    WarnLabel.Visible = false
+end)
+
+if Heartbeat then
+    Heartbeat:Connect(function(deltaTime)
+        if not InvisEnabled or not Invis_Fixed then
+            if not InvisEnabled and Character then
+                for _, v in pairs(Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.Transparency == 0.5 then v.Transparency = 0 end
+                end
+            end
+            WarnLabel.Visible = false
+            return
+        end
+
+        if not Character or not Humanoid or not HumanoidRootPart or not Humanoid:IsDescendantOf(workspace) or Humanoid.Health <= 0 then
+            WarnLabel.Visible = false
+            return
+        end
+
+        WarnLabel.Visible = not Grounded()
+
+        local speed = 12
+        if Humanoid.MoveDirection.Magnitude > 0 then
+            local offset = Humanoid.MoveDirection * speed * deltaTime
+            if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+                HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + offset
+            end
+        end
+
+        local OldCFrame = HumanoidRootPart.CFrame
+        local OldCameraOffset = Humanoid.CameraOffset
+
+        local _, y = workspace.CurrentCamera.CFrame:ToOrientation()
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.CFrame.Position) * CFrame.fromOrientation(0, y, 0)
+            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+        end
+        Humanoid.CameraOffset = Vector3.new(0, 1.44, 0)
+
+        if Track then
+            local ok = pcall(function()
+                if not Track.IsPlaying then Track:Play() end
+                Track:AdjustSpeed(0)
+                Track.TimePosition = 0.3
+            end)
+            if not ok then LoadAndPrepareTrack() end
+        elseif Humanoid and Humanoid.Health > 0 then
+            LoadAndPrepareTrack()
+        end
+
+        if RenderStepped then RenderStepped:Wait() end
+
+        if Humanoid and Humanoid:IsDescendantOf(workspace) then
+            Humanoid.CameraOffset = OldCameraOffset
+        end
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = OldCFrame
+        end
+
+        if Track then pcall(function() Track:Stop() end) end
+
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            local LookVector = workspace.CurrentCamera.CFrame.LookVector
+            local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z)
+            if Horizontal.Magnitude > 0.1 then
+                local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal.Unit)
+                HumanoidRootPart.CFrame = TargetCFrame
+            end
+        end
+
+        if Character then
+            for _, v in pairs(Character:GetDescendants()) do
+                if v:IsA("BasePart") and v.Transparency ~= 1 then
+                    v.Transparency = 0.5
+                end
+            end
+        end
+    end)
 end
 
-local whitedrop = whitelistsec:AddDropdown('whitelistdrop', {
-    Title = 'Whitelist Players',
-    Values = getplayers(),
-    Default = {},
-    Multi = true
-    Callback = function(sel)
-        whitelist = sel
-    end
-})
-
-plrs.PlayerAdded:Connect(function()
-    if whitedrop then whitedrop:Refresh(getplayers()) end
-end)
-
-plrs.PlayerRemoving:Connect(function()
-    if whitedrop then whitedrop:Refresh(getplayers()) end
-end)
+_G.Invis_Enable = Invis_Enable
+_G.Invis_Disable = Invis_Disable
+_G.IsInvisEnabled = function() return InvisEnabled end
 
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
@@ -1569,202 +1465,112 @@ visw:AddToggle('safeesp', { Text = 'Safe ESP', Default = false, Callback = funct
     end
 })
 
--- SILENT AIM CONTROLS
-silent:AddToggle('v1', {
-    Text = 'Toggle',
-    Default = false,
-    Callback = function(Value)
-        functions.SilentAim = Value
-        SectionSettings.SilentAim.Toggle = Value
-        if Value then task.spawn(SetupSilentAim) end
-    end
-}):AddKeyPicker("silentkey", {
-    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Silent Aim Key", NoUI = false,
-})
-
+silent:AddToggle('v1', { Text = 'Toggle', Default = false, Callback = function(Value) functions.SilentAim = Value; SectionSettings.SilentAim.Toggle = Value end }):AddKeyPicker("silentkey", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Silent Aim Key" })
 silent:AddToggle('v2', { Text = 'Check Team', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckTeam = Value end })
 silent:AddToggle('v3_wall', { Text = 'Check Wall', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckWall = Value end })
 silent:AddToggle('v4', { Text = 'Check Downed', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckDowned = Value end })
 silent:AddToggle('v3_ff', { Text = 'Check Force Field', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckFF = Value end })
-silent:AddToggle('v3_white', { Text = 'Check Whitelist', Default = false, Callback = function(Value) SectionSettings.SilentAim.CheckWhitelist = Value end })
+silent:AddDropdown('AimPartDropdown', { Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" }, Default = 1, Text = 'Aim Parts', Callback = function(Value) if Value == "Random" then task.spawn(runRandomLoop) else randomActive = false; SectionSettings.SilentAim.TargetParts = {Value} end end })
+silent:AddSlider('random_speed', { Text = 'Random Time', Default = 1, Min = 0.1, Max = 10, Rounding = 1, Callback = function(Value) SectionSettings.SilentAim.RandomTime = Value end })
+silent:AddToggle('v3_hit', { Text = 'Hit Chance', Default = false, Callback = function(Value) SectionSettings.SilentAim.HitChanceToggle = Value end })
+silent:AddSlider('htchance amount', { Text = 'Hit Chance Amount', Default = 100, Min = 0, Max = 100, Rounding = 1, Callback = function(Value) SectionSettings.SilentAim.HitChance = Value end })
+silent:AddToggle('v4_fov', { Text = 'Show FOV', Default = false, Callback = function(Value) SectionSettings.SilentAim.ShowFOV = Value end }):AddColorPicker('fov color', { Default = Color3.new(1, 1, 1), Callback = function(Value) SectionSettings.SilentAim.DrawColor = Value end })
+silent:AddToggle('v5', { Text = 'Filled', Default = false, Callback = function(Value) SectionSettings.SilentAim.Filled = Value end })
+silent:AddSlider('fov size', { Text = 'FOV Size', Default = 100, Min = 0, Max = 500, Rounding = 1, Callback = function(Value) SectionSettings.SilentAim.DrawSize = Value end })
+silent:AddSlider('thickness', { Text = 'Thickness', Default = 1, Min = 0, Max = 10, Rounding = 1, Callback = function(Value) SectionSettings.SilentAim.Thickness = Value end })
 
-silent:AddDropdown('AimPartDropdown', {
-    Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" },
-    Default = 1, Multi = false, Text = 'Aim Parts',
-    Callback = function(Value)
-        if Value == "Random" then task.spawn(runRandomLoop) else randomActive = false SectionSettings.SilentAim.TargetParts = {Value} end
-    end
-})
-
-silent:AddSlider('random_speed', {
-    Text = 'Random Time', Default = 1, Min = 0.1, Max = 10, Rounding = 1, Compact = false,
-    Callback = function(Value) SectionSettings.SilentAim.RandomTime = Value end
-})
-
--- AIMBOT CONTROLS
-aimbot:AddToggle('aimbot', {
-    Text = 'Toggle', Default = false,
-    Callback = function(Value) functions.aimbot = Value end
-}):AddKeyPicker("aimbotkey", {
-    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Aimbot Key", NoUI = false,
-})
-
+-- [AIMBOT TOGGLES]
+aimbot:AddToggle('aimbot', { Text = 'Toggle', Default = false, Callback = function(Value) functions.aimbot = Value end }):AddKeyPicker("aimbotkey", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Aimbot Key" })
 aimbot:AddToggle('aimbotteam', { Text = 'Check Team', Default = false, Callback = function(Value) functions.team = Value end })
 aimbot:AddToggle('aimbotwall', { Text = 'Check Wall', Default = false, Callback = function(Value) functions.wall = Value end })
 aimbot:AddToggle('aimbotdowned', { Text = 'Check Downed', Default = false, Callback = function(Value) functions.downed = Value end })
-aimbot:AddToggle('aimbotff_check', { Text = 'Check Force Field', Default = false, Callback = function(Value) functions.ff = Value end })
-aimbot:AddToggle('aimbotwhite_check', { Text = 'Check Whitelist', Default = false, Callback = function(Value) functions.checkwhite = Value end })
+aimbot:AddToggle('aimbotff', { Text = 'Check Force Field', Default = false, Callback = function(Value) functions.ff = Value end })
+aimbot:AddDropdown('AimPartDropdown1', { Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" }, Default = 1, Text = 'Aim Parts', Callback = function(Value) if Value == "Random" then task.spawn(runRandomLoop1) else random1Active = false; functions.aimpart = {Value} end end })
+aimbot:AddSlider('aimbotrand', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Callback = function(Value) functions.randomtime = Value end })
+aimbot:AddToggle('aimbotsmooth_t', { Text = 'Smooth', Default = false, Callback = function(Value) functions.smooth = Value end })
+aimbot:AddSlider('aimbotsmooth_s', { Text = 'Smooth Amount', Default = 0.1, Min = 0, Max = 10, Rounding = 2, Callback = function(Value) functions.smoothsize = Value end })
+aimbot:AddToggle('aimbotfov_t', { Text = 'FOV Circle', Default = false, Callback = function(Value) functions.fov = Value end }):AddColorPicker('fov color aim', { Default = Color3.new(1, 1, 1), Callback = function(Value) functions.fovcolor = Value end })
+aimbot:AddToggle('aimbotfov_f', { Text = 'Filled', Default = false, Callback = function(Value) functions.fovfilled = Value end })
+aimbot:AddSlider('aimbotfov_s', { Text = 'FOV Size', Default = 100, Min = 0, Max = 500, Rounding = 2, Callback = function(Value) functions.fovsize = Value end })
+aimbot:AddSlider('aimbotfov_y', { Text = 'Thickness', Default = 1, Min = 0, Max = 100, Rounding = 2, Callback = function(Value) functions.thickness = Value end })
 
--- RAGE BOT CONTROLS
-rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) settings.ragebot = Value end }):AddKeyPicker("ragekey", {
-    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Rage Bot Key", NoUI = false,
-})
+-- [RAGE BOT TOGGLES]
+rage:AddToggle('rage', { Text = 'Toggle', Default = false, Callback = function(Value) settings.ragebot = Value end }):AddKeyPicker("ragekey", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Rage Bot Key" })
+rage:AddToggle('rageteamcheck', { Text = 'Check Team', Default = false, Callback = function(Value) settings.checkteam = Value end })
+rage:AddToggle('ragewallcheck', { Text = 'Check Wall', Default = false, Callback = function(Value) settings.checkwall = Value end })
+rage:AddToggle('ragedownedcheck', { Text = 'Check Downed', Default = false, Callback = function(Value) settings.checkdowned = Value end })
+rage:AddToggle('ragesound', { Text = 'Hit Sound', Default = false, Callback = function(Value) settings.sound = Value end })
+rage:AddToggle('ragehit', { Text = 'Hit Log', Default = false, Callback = function(Value) settings.hitlog = Value end })
+rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
+rage:AddToggle('ragefov', { Text = 'FOV Circle', Default = false, Callback = function(Value) settings.fov_enabled = Value end }):AddColorPicker('fov color rage', { Default = Color3.new(1, 1, 1), Callback = function(Value) settings.fov_color = Value end })
+rage:AddDropdown("hitsound_dropdown", { Text = "Hit Sound List", Values = soundList, Default = "Default", Callback = function(v) settings.selected_sound = sounds[v] end })
+rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Callback = function(Value) settings.distance = Value end })
+rage:AddSlider('fovradius', { Text = 'FOV Radius', Default = 150, Min = 0, Max = 500, Rounding = 1, Callback = function(Value) settings.fov_radius = Value end })
+rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Callback = function(Value) settings.shootspeed = Value end })
+rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Callback = function(Value) settings.fireinterval = Value end })
 
--- MEELE AURA CONTROLS
-meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) 
-		Meele.Toggle = Value
-	end
-}):AddKeyPicker("meelkey", {
-    Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Meele Aura Key", NoUI = false,
-})
+-- [MEELE AURA TOGGLES]
+meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) Meele.Toggle = Value end }):AddKeyPicker("meelkey", { Default = "None", SyncToggleState = true, Mode = "Toggle", Text = "Meele Aura Key" })
+meele:AddToggle('meeleshowanim', { Text = 'Show Animation', Default = false, Callback = function(Value) Meele.Anim = Value end })
+meele:AddToggle('meeleteam', { Text = 'Check Team', Default = false, Callback = function(Value) Meele.Team = Value end })
+meele:AddToggle('meeledowned', { Text = 'Check Downed', Default = false, Callback = function(Value) Meele.Downed = Value end })
+meele:AddDropdown('AimPartDropdown2', { Values = { "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "Random" }, Default = 1, Text = 'Aim Parts', Callback = function(Value) if Value == "Random" then task.spawn(runRandomLoop2) else random2Active = false; Meele.Target = {Value} end end })
+meele:AddSlider('meeletime', { Text = 'Random Time', Default = 1, Min = 0, Max = 10, Rounding = 2, Callback = function(Value) Meele.Randomtime = Value end })
+meele:AddSlider('meeledistance', { Text = 'Distance', Default = 15, Min = 0, Max = 100, Rounding = 2, Callback = function(Value) Meele.Distance = Value end })
 
--- PLAYER MODS
-local fovcamera = false
-local fovcameraamount = 70
-local cframespeed = false
-local cframespeedamount = 1
-local spin = false
-local spinspeed = 10
-local jumpheight = false
-local jumpamount = 7.2
+-- [PLAYER MODS & INVIS]
+local fovcamera, fovcameraamount = false, 70
+local cframespeed, cframespeedamount = false, 1
+local spin, spinspeed = false, 10
+local jumpheight, jumpamount = false, 7.2
 
-plrc:AddToggle("fovcamera", {
-    Text = "Field Of View",
-    Default = false,
-    Callback = function(Value)
-        fovcamera = Value
-        if not Value then camera.FieldOfView = 70 end
-    end
-})
+plrc:AddToggle("fovcamera", { Text = "Field Of View", Default = false, Callback = function(Value) fovcamera = Value; if not Value then camera.FieldOfView = 70 end end })
+plrc:AddSlider('fovcameraamount', { Text = 'Field Of View Amount', Default = 70, Min = 0, Max = 120, Rounding = 2, Callback = function(Value) fovcameraamount = Value end })
+plrc:AddToggle("cframespeed", { Text = "CFrame Speed", Default = false, Callback = function(Value) cframespeed = Value end })
+plrc:AddSlider('cframespeedamount', { Text = 'CFrame Speed Amount', Default = 1, Min = 0, Max = 5, Rounding = 2, Callback = function(Value) cframespeedamount = Value end })
+plrc:AddToggle("jumpheight", { Text = "Jump Height", Default = false, Callback = function(Value) jumpheight = Value; if not Value and me.Character:FindFirstChild("Humanoid") then me.Character.Humanoid.JumpHeight = 7.2 end end })
+plrc:AddSlider('jumpamount', { Text = 'Jump Height Amount', Default = 7.2, Min = 0, Max = 50, Rounding = 2, Callback = function(Value) jumpamount = Value end })
+plrc:AddToggle("spin", { Text = "Spin", Default = false, Callback = function(Value) spin = Value end })
+plrc:AddSlider('spinspeed', { Text = 'Spin Speed', Default = 10, Min = 0, Max = 100, Rounding = 2, Callback = function(Value) spinspeed = Value end })
 
-plrc:AddSlider('fovcameraamount', { 
-    Text = 'Field Of View Amount', 
-    Default = 70, Min = 0, Max = 120, Rounding = 2, 
-    Callback = function(Value) fovcameraamount = Value end 
-})
+plrc:AddToggle("inv", { Text = "Invisible", Default = false, Callback = function(Value) if Value then _G.Invis_Enable() else _G.Invis_Disable() end end })
 
+-- [LOOPS DE PLAYER]
 run.RenderStepped:Connect(function()
     if fovcamera then camera.FieldOfView = fovcameraamount end
-    
     if jumpheight and me.Character and me.Character:FindFirstChild("Humanoid") then
-        local hum = me.Character.Humanoid
-        hum.UseJumpPower = false
-        hum.JumpHeight = jumpamount
+        me.Character.Humanoid.UseJumpPower = false
+        me.Character.Humanoid.JumpHeight = jumpamount
     end
 end)
 
 run.Heartbeat:Connect(function()
-    if cframespeed and me.Character and me.Character:FindFirstChild('Humanoid') and me.Character:FindFirstChild('HumanoidRootPart') then
+    if cframespeed and me.Character and me.Character:FindFirstChild('HumanoidRootPart') then
         local hum = me.Character.Humanoid
-        local hrp = me.Character.HumanoidRootPart
         if hum.MoveDirection.Magnitude > 0 then
-            hrp.CFrame = hrp.CFrame + (hum.MoveDirection * cframespeedamount)
+            me.Character.HumanoidRootPart.CFrame = me.Character.HumanoidRootPart.CFrame + (hum.MoveDirection * cframespeedamount)
         end
     end
-
     if spin and me.Character and me.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = me.Character.HumanoidRootPart
-        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(spinspeed), 0)
+        me.Character.HumanoidRootPart.CFrame = me.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(spinspeed), 0)
     end
 end)
 
--- AUTO PICKUP MONEY
-local autopickup = false
-local connection
-
-plrc:AddToggle("autopickup_toggle", {
-    Text = "Auto Pickup Money",
-    Default = false,
-    Callback = function(Value)
-        autopickup = Value
-        if connection then connection:Disconnect() connection = nil end
-
-        if autopickup then
-            local remote = ReplicatedStorage.Events:FindFirstChild('CZDPZUS')
-            local moneyfolder = workspace.Filter.SpawnedBread
-            local canpickup = true
-            local starttick = tick()
-
-            connection = run.RenderStepped:Connect(function()
-                local function getmony()
-                    local dist = 15
-                    local closest = nil
-                    if me.Character and me.Character:FindFirstChild('HumanoidRootPart') then
-                        for _, m in pairs(moneyfolder:GetChildren()) do
-                            local distance = (me.Character.HumanoidRootPart.Position - m.Position).Magnitude
-                            if distance < dist then
-                                dist = distance
-                                closest = m
-                            end
-                        end
-                    end
-                    return closest
-                end
-                
-                local foundmoney = getmony()
-                if foundmoney and canpickup and remote then
-                    remote:FireServer(foundmoney)
-                    canpickup = false
-                    starttick = tick()
-                end
-                
-                if not canpickup and tick() - starttick >= 1 then canpickup = true end
-            end)
-        end
-    end
-})
-
--- WATERMARK & SETTINGS
+-- [FINALIZAÇÃO DO MENU]
 Library:SetWatermarkVisibility(true)
-local FrameTimer = tick()
-local FrameCounter = 0;
-local FPS = 60;
-
+local FrameTimer, FrameCounter, FPS = tick(), 0, 60
 RunService.RenderStepped:Connect(function()
-    FrameCounter += 1;
+    FrameCounter = FrameCounter + 1
     if (tick() - FrameTimer) >= 1 then
-        FPS = FrameCounter;
-        FrameTimer = tick();
-        FrameCounter = 0;
-    end;
-
-    local TimeString = os.date("%I:%M%p")
-    Library:SetWatermark(('Skidware.cc | Criminality | %s | %s fps | %s ms'):format(
-        TimeString,
-        math.floor(FPS),
-        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
-    ));
-end);
+        FPS = FrameCounter
+        FrameTimer, FrameCounter = tick(), 0
+    end
+    Library:SetWatermark(('Skidware.cc | Criminality | %s | %s fps | %s ms'):format(os.date("%I:%M%p"), math.floor(FPS), math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())))
+end)
 
 local MenuGroup = tabs.settings:AddLeftGroupbox('Menu')
 MenuGroup:AddButton('Unload', function() Library:Unload() end)
 MenuGroup:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'Q', NoUI = true, Text = 'Menu Keybind' })
 Library.ToggleKeybind = Options.MenuKeybind 
-
-ThemeManager:SetLibrary(Library)
-SaveManager:SetLibrary(Library)
-SaveManager:IgnoreThemeSettings()
-SaveManager:SetIgnoreIndexes({ 'MenuKeybind' })
-ThemeManager:SetFolder('skidware.cc')
-SaveManager:SetFolder('skidware.cc/criminality')
-SaveManager:BuildConfigSection(tabs.settings)
-ThemeManager:ApplyToTab(tabs.settings)
-SaveManager:LoadAutoloadConfig()
-
-MenuGroup:AddToggle("Keybind", {
-	Text = "Key Bind List",
-	Default = false,
-	Callback = function(Value)
-    	Library.KeybindFrame.Visible = Value 
-	end,
-})
+ThemeManager:SetLibrary(Library); SaveManager:SetLibrary(Library); ThemeManager:SetFolder('skidware.cc'); SaveManager:SetFolder('skidware.cc/criminality')
+SaveManager:BuildConfigSection(tabs.settings); ThemeManager:ApplyToTab(tabs.settings); SaveManager:LoadAutoloadConfig()
