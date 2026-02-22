@@ -520,4 +520,492 @@ local remoteEventPath = "XMHH2.2"
 local remote1 = events and events:WaitForChild(remoteFunctionPath, 5)
 local remote2 = events and events:WaitForChild(remoteEventPath, 5)
 
-local AttachCD = {["Fists"] = .35, ["BBaton"] = .5, ["__ZombieFists1"] = .35, ["__ZombieFists2"] = .37, ["__ZombieFists3"] = .22, ["__ZombieFists4"] = .4, ["__XFists"] = .35, ["Balisong"] = .3, ["Bat"] = 1.2, ["Bayonet"] = .6, ["BlackBayonet"] = .6, ["CandyCrowbar"] = 2.5, ["Chainsaw"] = 3, ["Crowbar"] = 1.2, ["Clippers"] = .6, ["CursedDagger"] = .8, ["DELTA-X04"] = .6, ["ERADICATOR"] = 2, ["ERADICATOR-II"] = 2, ["Fire-Axe"] = 1.6, ["GoldenAxe"] = .75, ["Golfclub"] = 1.2, ["Hatchet"] = .7, ["Katana"] = .6, ["Knuckledusters"] = .5, ["Machete"] = .7, ["Metal-Bat"] = 1.3, ["Nunchucks"] = .3, ["PhotonBlades"] = .8, ["Rambo"] = .8, ["ReforgedKatana"] = .85, ["Rendbreaker"] = 1.5, ["RoyalBroadsword"] = 1, ["Sabre"] = .7, ["Scythe"] = 1.2, ["Shiv"] = .5, ["Shovel"] = 2.5, ["SlayerSword"] = 1.5, ["Sledgehammer"] = 2.2, ["Taiga"] = .7, ["Tomahawk"] = .85, ["Wrench"] 
+local AttachCD = {["Fists"] = .35, ["BBaton"] = .5, ["__ZombieFists1"] = .35, ["__ZombieFists2"] = .37, ["__ZombieFists3"] = .22, ["__ZombieFists4"] = .4, ["__XFists"] = .35, ["Balisong"] = .3, ["Bat"] = 1.2, ["Bayonet"] = .6, ["BlackBayonet"] = .6, ["CandyCrowbar"] = 2.5, ["Chainsaw"] = 3, ["Crowbar"] = 1.2, ["Clippers"] = .6, ["CursedDagger"] = .8, ["DELTA-X04"] = .6, ["ERADICATOR"] = 2, ["ERADICATOR-II"] = 2, ["Fire-Axe"] = 1.6, ["GoldenAxe"] = .75, ["Golfclub"] = 1.2, ["Hatchet"] = .7, ["Katana"] = .6, ["Knuckledusters"] = .5, ["Machete"] = .7, ["Metal-Bat"] = 1.3, ["Nunchucks"] = .3, ["PhotonBlades"] = .8, ["Rambo"] = .8, ["ReforgedKatana"] = .85, ["Rendbreaker"] = 1.5, ["RoyalBroadsword"] = 1, ["Sabre"] = .7, ["Scythe"] = 1.2, ["Shiv"] = .5, ["Shovel"] = 2.5, ["SlayerSword"] = 1.5, ["Sledgehammer"] = 2.2, ["Taiga"] = .7, ["Tomahawk"] = .85, ["Wrench"] = .6, ["_BFists"] = .35, ["_FallenBlade"] = 1.3, ["_Sledge"] = 2.2, ["new_oldSlayerSword"] = 1.5}
+
+local currentSlash = 1
+local lastAttack = 0
+local meeleconn
+
+local function attack(target)
+    local char = me.Character
+    local tool = char and char:FindFirstChildOfClass("Tool")
+    if not tool then return end
+
+    local cd = AttachCD[tool.Name] or 0.5
+    if tick() - lastAttack < cd then return end
+    lastAttack = tick()
+
+    local aimtarget = Meele.Target[1] or "Head"
+    local aimpart = target:FindFirstChild(aimtarget)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not (aimpart and hrp and remote1 and remote2) then return end
+
+    local arg1 = {
+        [1] = "🍞",
+        [2] = tick(),
+        [3] = tool,
+        [4] = "43TRFWX",
+        [5] = "Normal",
+        [6] = tick(),
+        [7] = true
+    }
+
+    local success1, result = pcall(function()
+        return remote1:InvokeServer(unpack(arg1))
+    end)
+
+    if not success1 then return end
+
+    task.wait(0.05)
+
+    local handle = tool:FindFirstChild('WeaponHandle') or tool:FindFirstChild("Handle") or char:FindFirstChild("Right Arm")
+    
+    if handle then
+        local arg2 = {
+            [1] = "🍞",
+            [2] = tick(),
+            [3] = tool,
+            [4] = "2389ZFX34",
+            [5] = result,
+            [6] = false,
+            [7] = handle,
+            [8] = aimpart,
+            [9] = target,
+            [10] = hrp.Position,
+            [11] = aimpart.Position
+        }
+        pcall(function()
+            remote2:FireServer(unpack(arg2))
+        end)
+    end
+
+    if Meele.Anim then
+        local animFolder = tool:FindFirstChild("AnimsFolder")
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if animFolder and hum then
+            local animator = hum:FindFirstChildOfClass("Animator") or hum
+            local anim = animFolder:FindFirstChild("Slash" .. currentSlash)
+            if anim and animator then
+                animator:LoadAnimation(anim):Play(0.1, 1, 1.3)
+                currentSlash = animFolder:FindFirstChild("Slash" .. (currentSlash + 1)) and (currentSlash + 1) or 1
+            end
+        end
+    end
+end
+
+local function loop()
+    return run.RenderStepped:Connect(function()
+        if not Meele.Toggle then return end
+        local char = me.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        for _, p in pairs(plrs:GetPlayers()) do
+            if p == me then continue end
+            local c = p.Character
+            local targetHrp = c and c:FindFirstChild("HumanoidRootPart")
+            local hum = c and c:FindFirstChildOfClass("Humanoid")
+            
+            if targetHrp and hum and hum.Health > 0 then
+                if Meele.Team and p.Team == me.Team then continue end
+                if Meele.Downed and hum.Health < 15 then continue end
+                if Meele.FF and c:FindFirstChildOfClass('ForceField') then continue end
+                
+                if (targetHrp.Position - hrp.Position).Magnitude <= Meele.Distance then
+                    attack(c)
+                    break
+                end
+            end
+        end
+    end)
+end
+
+meeleconn = loop()
+
+local cloneref = cloneref or function(...) return ... end
+local Service = setmetatable({}, {
+    __index = function(_, k) return cloneref(game:GetService(k)) end
+})
+
+repeat task.wait() until game:IsLoaded()
+local Players = Service.Players
+local Player = Players and Players.LocalPlayer
+repeat task.wait() Player = Players and Players.LocalPlayer until Player
+
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid, HumanoidRootPart
+local function UpdateCharacterReferences()
+    Character = Player.Character
+    if Character then
+        HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+        Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    else
+        HumanoidRootPart = nil
+        Humanoid = nil
+    end
+end
+UpdateCharacterReferences()
+
+local Invis_Fixed = true
+local InvisEnabled = false
+local Track = nil
+local Animation = Instance.new("Animation")
+Animation.AnimationId = "rbxassetid://215384594"
+
+local RunService = Service.RunService
+local Heartbeat = RunService and RunService.Heartbeat
+local RenderStepped = RunService and RunService.RenderStepped
+local StarterGui = Service.StarterGui
+local CoreGui = Service.CoreGui
+
+local GUI = Instance.new("ScreenGui")
+GUI.Name = "InvisWarningGUI"
+GUI.ResetOnSpawn = false
+GUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+GUI.Parent = CoreGui
+
+local WarnLabel = Instance.new("TextLabel", GUI)
+WarnLabel.Text = "⚠️You are visible⚠️"
+WarnLabel.Visible = false
+WarnLabel.Size = UDim2.new(0, 200, 0, 30)
+WarnLabel.Position = UDim2.new(0.5, -100, 0.85, 0)
+WarnLabel.BackgroundTransparency = 1
+WarnLabel.Font = Enum.Font.GothamSemibold
+WarnLabel.TextSize = 24
+WarnLabel.TextColor3 = Color3.fromRGB(255,255,0)
+WarnLabel.TextStrokeTransparency = 0.5
+WarnLabel.ZIndex = 10
+
+local function Grounded()
+    return Humanoid and Humanoid:IsDescendantOf(workspace) and Humanoid.FloorMaterial ~= Enum.Material.Air
+end
+
+local function LoadAndPrepareTrack()
+    if Track then
+        pcall(function() Track:Stop() end)
+        Track = nil
+    end
+    if Humanoid then
+        local ok, res = pcall(function() return Humanoid:LoadAnimation(Animation) end)
+        if ok and res then
+            Track = res
+            Track.Priority = Enum.AnimationPriority.Action4
+        else
+            Track = nil
+        end
+    else
+        Track = nil
+    end
+end
+
+local function Invis_Disable()
+    if not InvisEnabled then return end
+    InvisEnabled = false
+    if Track then pcall(function() Track:Stop() end) end
+    if Humanoid then pcall(function() workspace.CurrentCamera.CameraSubject = Humanoid end) end
+    if Character then
+        for _, v in pairs(Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.Transparency == 0.5 then
+                v.Transparency = 0
+            end
+        end
+    end
+    WarnLabel.Visible = false
+end
+
+local function Invis_Enable()
+    if InvisEnabled or not Invis_Fixed then return end
+    UpdateCharacterReferences()
+    if not Character or not Humanoid or not HumanoidRootPart then return end
+    if not Character:FindFirstChild("Torso") then
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility FAILED", Text="Feature requires R6 Avatar.", Duration=5})
+        end)
+        return
+    end
+    InvisEnabled = true
+    pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end)
+    LoadAndPrepareTrack()
+end
+
+Player.CharacterAdded:Connect(function(newChar)
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    task.wait()
+    UpdateCharacterReferences()
+    if not Humanoid then
+        task.wait(0.5)
+        UpdateCharacterReferences()
+        if not Humanoid then
+            Invis_Fixed = false
+            if InvisEnabled then Invis_Disable() end
+            pcall(function()
+                StarterGui:SetCore("SendNotification", {Title="Invisibility Error", Text="Could not verify character type.", Duration=5})
+            end)
+            return
+        end
+    end
+    if Humanoid.RigType ~= Enum.HumanoidRigType.R6 then
+        Invis_Fixed = false
+        if InvisEnabled then Invis_Disable() end
+        pcall(function()
+            StarterGui:SetCore("SendNotification", {Title="Invisibility Warning", Text="Non-R6 Avatar detected. Invisibility disabled.", Duration=5})
+        end)
+        return
+    else
+        Invis_Fixed = true
+    end
+    if InvisEnabled then
+        if HumanoidRootPart then pcall(function() workspace.CurrentCamera.CameraSubject = HumanoidRootPart end) end
+        LoadAndPrepareTrack()
+    end
+end)
+
+Player.CharacterRemoving:Connect(function()
+    if Track then pcall(function() Track:Stop() end) Track = nil end
+    WarnLabel.Visible = false
+end)
+
+if Heartbeat then
+    Heartbeat:Connect(function(deltaTime)
+        if not InvisEnabled or not Invis_Fixed then
+            if not InvisEnabled and Character then
+                for _, v in pairs(Character:GetDescendants()) do
+                    if v:IsA("BasePart") and v.Transparency == 0.5 then v.Transparency = 0 end
+                end
+            end
+            WarnLabel.Visible = false
+            return
+        end
+
+        if not Character or not Humanoid or not HumanoidRootPart or not Humanoid:IsDescendantOf(workspace) or Humanoid.Health <= 0 then
+            WarnLabel.Visible = false
+            return
+        end
+
+        WarnLabel.Visible = not Grounded()
+
+        local speed = 12
+        if Humanoid.MoveDirection.Magnitude > 0 then
+            local offset = Humanoid.MoveDirection * speed * deltaTime
+            if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+                HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + offset
+            end
+        end
+
+        local OldCFrame = HumanoidRootPart.CFrame
+        local OldCameraOffset = Humanoid.CameraOffset
+
+        local _, y = workspace.CurrentCamera.CFrame:ToOrientation()
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = CFrame.new(HumanoidRootPart.CFrame.Position) * CFrame.fromOrientation(0, y, 0)
+            HumanoidRootPart.CFrame = HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+        end
+        Humanoid.CameraOffset = Vector3.new(0, 1.44, 0)
+
+        if Track then
+            local ok = pcall(function()
+                if not Track.IsPlaying then Track:Play() end
+                Track:AdjustSpeed(0)
+                Track.TimePosition = 0.3
+            end)
+            if not ok then LoadAndPrepareTrack() end
+        elseif Humanoid and Humanoid.Health > 0 then
+            LoadAndPrepareTrack()
+        end
+
+        if RenderStepped then RenderStepped:Wait() end
+
+        if Humanoid and Humanoid:IsDescendantOf(workspace) then
+            Humanoid.CameraOffset = OldCameraOffset
+        end
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            HumanoidRootPart.CFrame = OldCFrame
+        end
+
+        if Track then pcall(function() Track:Stop() end) end
+
+        if HumanoidRootPart and HumanoidRootPart:IsDescendantOf(workspace) then
+            local LookVector = workspace.CurrentCamera.CFrame.LookVector
+            local Horizontal = Vector3.new(LookVector.X, 0, LookVector.Z)
+            if Horizontal.Magnitude > 0.1 then
+                local TargetCFrame = CFrame.new(HumanoidRootPart.Position, HumanoidRootPart.Position + Horizontal.Unit)
+                HumanoidRootPart.CFrame = TargetCFrame
+            end
+        end
+
+        if Character then
+            for _, v in pairs(Character:GetDescendants()) do
+                if v:IsA("BasePart") and v.Transparency ~= 1 then
+                    v.Transparency = 0.5
+                end
+            end
+        end
+    end)
+end
+
+_G.Invis_Enable = Invis_Enable
+_G.Invis_Disable = Invis_Disable
+_G.IsInvisEnabled = function() return InvisEnabled end
+
+local parts_list = {
+    "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
+}
+
+local randomActive = false
+local function runRandomLoop()
+    if randomActive then return end
+    randomActive = true
+    while randomActive do
+        local randomtime = SectionSettings.SilentAim.RandomTime or 1
+        local v1 = parts_list[math.random(1, #parts_list)]
+        SectionSettings.SilentAim.TargetParts = {v1}
+        task.wait(randomtime)
+    end
+end
+
+local random1Active = false
+local function runRandomLoop1()
+    if random1Active then return end
+    random1Active = true
+    while random1Active do
+        local random1time = functions.randomtime or 1
+        local v2 = parts_list[math.random(1, #parts_list)]
+        functions.aimpart = {v2}
+        task.wait(random1time)
+    end
+end
+
+local random2Active = false
+local function runRandomLoop2()
+    if random2Active then return end
+    random2Active = true
+    while random2Active do
+        local random2time = Meele.Randomtime or 1
+        local v3 = parts_list[math.random(1, #parts_list)]
+        Meele.Target = {v3}
+        task.wait(random2time)
+    end
+end
+
+vis:AddToggle('vis1', { Text = 'Enabled', Default = false, Callback = function(Value) ESP.ESP_Enabled = Value end })
+vis:AddToggle('vis2', { Text = 'Show Box', Default = false, Callback = function(Value) ESP.Box = Value end }):AddColorPicker('box color', {
+    Default = Color3.new(1, 1, 1), Title = 'Box Color', Transparency = 0,
+    Callback = function(Value) ESP.Box_Color = Value end
+})
+vis:AddToggle('vis3', { Text = 'Show Name', Default = false, Callback = function(Value) ESP.Name = Value end }):AddColorPicker('name color', {
+    Default = Color3.new(1, 1, 1), Title = 'Name Color', Transparency = 0,
+    Callback = function(Value) ESP.Name_Color = Value end
+})
+vis:AddToggle('vis4', { Text = 'Show Tool', Default = false, Callback = function(Value) ESP.Tool = Value end }):AddColorPicker('tool color', {
+    Default = Color3.new(1, 1, 1), Title = 'Tool Color', Transparency = 0,
+    Callback = function(Value) ESP.Tool_Color = Value end
+})
+vis:AddToggle('vis5', { Text = 'Show Distance', Default = false, Callback = function(Value) ESP.Distance = Value end }):AddColorPicker('distance color', {
+    Default = Color3.new(1, 1, 1), Title = 'Distance Color', Transparency = 0,
+    Callback = function(Value) ESP.Distance_Color = Value end
+})
+vis:AddToggle('vis6', { Text = 'Show Health Text', Default = false, Callback = function(Value) ESP.HealthText = Value end }):AddColorPicker('healtht color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Text Color', Transparency = 0,
+    Callback = function(Value) ESP.HealthText_Color = Value end
+})
+vis:AddToggle('vis7', { Text = 'Show Health Bar', Default = false, Callback = function(Value) ESP.HealthBar = Value end }):AddColorPicker('healthb color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Bar Color', Transparency = 0,
+    Callback = function(Value) ESP.HealthBar_Color = Value end
+})
+vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) ESP.Chams = Value end })
+vis:AddToggle('vis9', { Text = 'Show Head Dot', Default = false, Callback = function(Value) ESP.Headdot = Value end }):AddColorPicker('headdot color', {
+    Default = Color3.new(1, 1, 1), Title = 'Head Dot Color', Transparency = 0,
+    Callback = function(Value) ESP.Headdot_Color = Value end
+})
+vis:AddToggle('vis10', { Text = 'Show Skeletons', Default = false, Callback = function(Value) ESP.Skeleton = Value end })
+vis:AddToggle('vis12', { Text = 'Show Tracer', Default = false, Callback = function(Value) ESP.Tracer = Value end }):AddColorPicker('tracer color', {
+    Default = Color3.new(1, 1, 1), Title = 'Tracer Color', Transparency = 0,
+    Callback = function(Value) ESP.Tracer_Color = Value end
+})
+
+viss:AddToggle('vis11', { Text = 'Box Filled', Default = false, Callback = function(Value) ESP.Box_Filled = Value end }):AddColorPicker('box fill color', {
+    Default = Color3.new(1, 1, 1), Title = 'Box Fill Color', Transparency = 0,
+    Callback = function(Value) ESP.Box_Fill_Color = Value end
+})
+viss:AddSlider('box fill trans', {
+    Text = 'Box Fill Transparency', Default = 0.5, Min = 0, Max = 1, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Box_Fill_Transparency = Value end
+})
+viss:AddSlider('box thickness', {
+    Text = 'Box Thickness', Default = 1, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Box_Thickness = Value end
+})
+viss:AddSlider('headdot thickness', {
+    Text = 'Head Dot Thickness', Default = 1, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Headdot_Thickness = Value end
+})
+viss:AddToggle('headdot outline', { Text = 'Head Dot Outline', Default = false, Callback = function(Value) ESP.Headdot_Outline = Value end })
+viss:AddToggle('name outline', { Text = 'Name Outline', Default = false, Callback = function(Value) ESP.Name_Outline = Value end })
+viss:AddToggle('tool outline', { Text = 'Tool Outline', Default = false, Callback = function(Value) ESP.Tool_Outline = Value end })
+viss:AddToggle('dist outline', { Text = 'Distance Outline', Default = false, Callback = function(Value) ESP.Distance_Outline = Value end })
+viss:AddToggle('healtht outline', { Text = 'Health Text Outline', Default = false, Callback = function(Value) ESP.HealthText_Outline = Value end })
+viss:AddSlider('skeleton thickness', {
+    Text = 'Skeleton Thickness', Default = 1.5, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Skeleton_Thickness = Value end
+})
+viss:AddSlider('tracer thickness', {
+    Text = 'Tracer Thickness', Default = 1, Min = 1, Max = 10, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Tracer_Thickness = Value end
+})
+
+visw:AddToggle('dealeresp', { Text = 'Dealer ESP', Default = false, Callback = function(val)
+        DealerESP_Enabled = val
+        if val then
+            task.spawn(function()
+                while DealerESP_Enabled do
+                    task.wait(1)
+                    if Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Shopz") then
+                        for _, v in pairs(Workspace.Map.Shopz:GetChildren()) do
+                            if (v.Name == "Dealer" or v.Name == "ArmoryDealer") and not v:FindFirstChild("DealerESP") then
+                                local hl = Instance.new("Highlight", v)
+                                hl.Name = "DealerESP"
+                                if v.Name == "Dealer" then hl.FillColor = Color3.fromRGB(153, 255, 153)
+                                else hl.FillColor = Color3.fromRGB(153, 204, 255) end
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+             if Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Shopz") then
+                for _, v in pairs(Workspace.Map.Shopz:GetChildren()) do
+                    if v:FindFirstChild("DealerESP") then v.DealerESP:Destroy() end
+                end
+            end
+        end
+    end
+})
+local SafeESP_Enabled = false
+visw:AddToggle('safeesp', { Text = 'Safe ESP', Default = false, Callback = function(val)
+        SafeESP_Enabled = val
+        if val then
+            task.spawn(function()
+                while SafeESP_Enabled do
+                    task.wait(1)
+                    if Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("BredMakurz") then
+                        for _, obj in pairs(Workspace.Map.BredMakurz:GetChildren()) do
+                            if not obj:FindFirstChild("SafeESP") then
+                                local isSafe = obj.Name:lower():find("safe") or obj.Name:lower():find("register") or obj.Name:lower():find("cash")
+                                if isSafe then
+                                    local bg = Instance.new("BillboardGui", obj)
+                                    bg.Name = "SafeESP"
+                                    bg.AlwaysOnTop = true
+                                    bg.Size = UDim2.new(1.2, 0, 1.2, 0)
+                                    local txt = Instance.new("TextLabel", bg)
+                                    txt.Name = "name"
+                                    txt.Size = UDim2.new(1,0,0.3,0)
+                                    txt.BackgroundTransparency = 1
+                                    txt.TextColor3 = Color3.fromRGB(0, 255, 0)
+                                    txt.Text = obj.Name
+									txt.TextStrokeTransparency = 0
+                                    local hp = Instance.new("TextLabel", bg)
+                                    hp.Name = "health"
+                                    hp.Size = UDim2.new(1,0,0.3,0)
+                                    hp.Position = UDim2.new(0,0,0,17)
+									hp.BackgroundTransparency = 1
+                    
