@@ -103,7 +103,7 @@ local viss = tabs.visuals:AddRightGroupbox("Player Visuals Settings")
 local visw = tabs.visuals:AddRightGroupbox("World Visuals")
 local visp = tabs.visuals:AddLeftGroupbox('View Model Visuals')
 
-local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/S3f8PA7Y"))()
+local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
 
 local function IsPlayerDowned(p)
     if not p or not p.Character then return false end
@@ -891,37 +891,59 @@ local function runRandomLoop2()
     end
 end
 
-vis:AddToggle('vis1', { Text = 'Enabled', Default = false, Callback = function(Value) ESP.Enabled = Value end })
-vis:AddToggle('vis2', { Text = 'Show Box', Default = false, Callback = function(Value) ESP.Drawing.Boxes.Full = Value end })
-vis:AddToggle('vis3', { Text = 'Show Name', Default = false, Callback = function(Value) ESP.Drawing.Names.Enabled = Value end }):AddColorPicker('name color', {
+vis:AddToggle('vis1', { Text = 'Enabled', Default = false, Callback = function(Value) ESP.ESP_Enabled = Value end })
+vis:AddToggle('vis2', { Text = 'Show Box', Default = false, Callback = function(Value) ESP.Box = Value end }):AddColorPicker('box color', {
     Default = Color3.new(1, 1, 1), Title = 'Name Color', Transparency = 0,
-    Callback = function(Value) ESP.Drawing.Names.RGB = Value end
+    Callback = function(Value) ESP.Box_Color = Value end
 })
-vis:AddToggle('vis4', { Text = 'Show Tool', Default = false, Callback = function(Value) ESP.Drawing.Weapons.Enabled = Value end }):AddColorPicker('tool color', {
+vis:AddToggle('vis3', { Text = 'Show Name', Default = false, Callback = function(Value) ESP.Name = Value end }):AddColorPicker('name color', {
+    Default = Color3.new(1, 1, 1), Title = 'Name Color', Transparency = 0,
+    Callback = function(Value) ESP.Name_Color = Value end
+})
+vis:AddToggle('vis4', { Text = 'Show Tool', Default = false, Callback = function(Value) ESP.Tool = Value end }):AddColorPicker('tool color', {
     Default = Color3.new(1, 1, 1), Title = 'Tool Color', Transparency = 0,
-    Callback = function(Value) ESP.Drawing.Weapons.WeaponTextRGB = Value end
+    Callback = function(Value) ESP.Tool_Color = Value end
 })
-vis:AddToggle('vis5', { Text = 'Show Distance', Default = false, Callback = function(Value) ESP.Drawing.Distances.Enabled = Value end }):AddColorPicker('distance color', {
+vis:AddToggle('vis6', { Text = 'Show Distance', Default = false, Callback = function(Value) ESP.Distance = Value end }):AddColorPicker('distance color', {
     Default = Color3.new(1, 1, 1), Title = 'Distance Color', Transparency = 0,
-    Callback = function(Value) ESP.Drawing.Distances.RGB = Value end
+    Callback = function(Value) ESP.Distance_Color = Value end
 })
-vis:AddToggle('vis7', { Text = 'Show Health Bar', Default = false, Callback = function(Value) ESP.Drawing.Healthbar.Enabled = Value end })
-vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) ESP.Drawings.Chams.Enabled = Value end })
+vis:AddToggle('vis7', { Text = 'Show Skeleton', Default = false, Callback = function(Value) ESP.Skeleton = Value end })
+vis:AddToggle('vis8', { Text = 'Show Health Bar', Default = false, Callback = function(Value) ESP.HealthBar = Value end }):AddColorPicker('healthbar color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Bar Color', Transparency = 0,
+    Callback = function(Value) ESP.HealthBar_Color = Value end
+})
+vis:AddToggle('vis9', { Text = 'Show Health Text', Default = false, Callback = function(Value) ESP.HealthText = Value end }):AddColorPicker('healthtext color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Text Color', Transparency = 0,
+    Callback = function(Value) ESP.HealthText_Color = Value end
+})
+vis:AddToggle('vis5', { Text = 'Show Head Dot', Default = false, Callback = function(Value) ESP.Headdot = Value end }):AddColorPicker('healthbar color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Bar Color', Transparency = 0,
+    Callback = function(Value) ESP.Headdot_Color = Value end
+})
+vis:AddToggle('vis7', { Text = 'Show Tracer', Default = false, Callback = function(Value) ESP.Tracer = Value end }):AddColorPicker('tracer color', {
+    Default = Color3.new(1, 1, 1), Title = 'Health Bar Color', Transparency = 0,
+    Callback = function(Value) ESP.Tracer_Color = Value end
+})
+vis:AddToggle('vis10', { Text = 'Show Chams', Default = false, Callback = function(Value) ESP.Chams = Value end})
 
-viss:AddToggle('vis11', { Text = 'Box Filled', Default = false, Callback = function(Value) ESP.Drawing.Boxes.Filled.Enabled = Value end })
-viss:AddToggle('vis12', { Text = 'Box Gradient', Default = false, Callback = function(Value) ESP.Drawing.Boxes.Gradient = Value end })
-viss:AddToggle('vis13', { Text = 'Box Gradient Fill', Default = false, Callback = function(Value) ESP.Drawing.Boxes.GradientFill = Value end })
-
+viss:AddToggle('vis11', { Text = 'Box Filled', Default = false, Callback = function(Value) ESP.Box_Filled = Value end }):AddColorPicker('box fill color', {
+    Default = Color3.new(1, 1, 1), Title = 'Box Fill Color', Transparency = 0,
+    Callback = function(Value) ESP.Box_Fill_Color = Value end
+})
 viss:AddSlider('box fill trans', {
     Text = 'Box Fill Transparency', Default = 0.75, Min = 0, Max = 1, Rounding = 2, Compact = false,
-    Callback = function(Value) ESP.Drawing.Boxes.Filled.Transparency = Value end
+    Callback = function(Value) ESP.Box_Fill_Transparency = Value end
 })
-
-viss:AddToggle('vis14', { Text = 'Health Bar Gradient', Default = false, Callback = function(Value) ESP.Drawing.Healthbar.Gradient = Value end })
+viss:AddToggle('vis12', { Text = 'Name Outline', Default = false, Callback = function(Value) ESP.Name_Outline = Value end })
+viss:AddToggle('vis13', { Text = 'Health Text Outline', Default = false, Callback = function(Value) ESP.HealthText_Outline = Value end })
+viss:AddToggle('vis14', { Text = 'Distance Outline', Default = false, Callback = function(Value) ESP.Distance_Outline = Value end })
+viss:AddToggle('vis5', { Text = 'Tool Outline', Default = false, Callback = function(Value) ESP.Tool_Outline = Value end })
+viss:AddToggle('vis5', { Text = 'Head Dot Outline', Default = false, Callback = function(Value) ESP.Headdot_Outline = Value end })
 
 viss:AddSlider('vis15', {
-    Text = 'Health Bar Width', Default = 2.5, Min = 1, Max = 50, Rounding = 2, Compact = false,
-    Callback = function(Value) ESP.Drawing.Healthbar. = Value end
+    Text = 'Box Thickness', Default = 2.5, Min = 1, Max = 50, Rounding = 2, Compact = false,
+    Callback = function(Value) ESP.Box_Thickness = Value end
 })
 
 visw:AddToggle('dealeresp', { Text = 'Dealer ESP', Default = false, Callback = function(val)
