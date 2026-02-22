@@ -97,7 +97,7 @@ local viss = tabs.visuals:AddRightGroupbox("Player Visuals Settings")
 local visw = tabs.visuals:AddRightGroupbox("World Visuals")
 local visp = tabs.visuals:AddLeftGroupbox('View Model Visuals')
 local gunskins = tabs.skins:AddLeftGroupbox('Gun Skins')
-local meeleskins = tab.skins:AddRightGroupbox('Meele Skins')
+local meeleskins = tabs.skins:AddRightGroupbox('Meele Skins')
 
 local ESP = loadstring(game:HttpGet("https://pastebin.com/raw/M6NJDXGV"))()
 
