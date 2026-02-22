@@ -1,4 +1,4 @@
-Zlocal Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -1310,7 +1310,7 @@ local function updateToolMeshes(tool, textureID, skipParts)
 end
 
 local function applySkin(config, textureID)
-    local chars = Workspace:FindFirstChild("Characters")
+    local chars = workspace:FindFirstChild("Characters")
     if not chars then warn("No Characters folder!") return end
     local tools = config.LinkedTools or { config.Name }
     for _, char in pairs(chars:GetChildren()) do
