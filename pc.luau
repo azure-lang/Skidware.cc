@@ -1318,44 +1318,6 @@ plrc:AddToggle("autopickup_toggle", {
     end
 })
 
-for wName, cfg in pairs(WeaponSkins) do
-    cfg.Name = wName
-    local sks = {}
-    for nm in pairs(cfg.Skins) do
-        table.insert(sks, nm)
-    end
-    table.sort(sks)
-    gunskins:AddDropdown('skinsg', {
-    	Values = sks,
-    	Default = 'Default', 
-		Multi = false, 
-    	Text = wName .. ' Skin',
-    	Callback = function(sel)
-        	local tid = cfg.Skins[sel]
-            if tid then applySkin(cfg, tid) end
-    	end
-	})
-end
-
-for toolName, cfg in pairs(MeleeSkins) do
-    cfg.Name = toolName
-    local names = {}
-    for skinName, _ in pairs(cfg.Skins) do
-        table.insert(names, skinName)
-    end
-    table.sort(names)
-    meeleskins:AddDropdown('skinsm', {
-    	Values = names,
-    	Default = "Default", 
-		Multi = false, 
-    	Text = toolName .. ' Skin',
-    	Callback = function(sel)
-        	local tid = cfg.Skins[sel]
-            if tid then applyMeleeSkin(cfg, tid) end
-    	end
-	})
-end
-
 Library:SetWatermarkVisibility(true)
 local FrameTimer = tick()
 local FrameCounter = 0;
