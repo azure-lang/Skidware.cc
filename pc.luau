@@ -18,7 +18,7 @@ local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))
 local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
 
 local window = Library:CreateWindow({
-    Title = "Skidware.cc"
+    Title = "memesense.cc"
 })
 
 local tabs = {
@@ -1439,7 +1439,7 @@ local WatermarkConnection = RunService.RenderStepped:Connect(function()
 
     local TimeString = os.date("%I:%M%p")
 
-    Library:SetWatermark(('Skidware.cc | Criminality | %s | %s fps | %s ms'):format(
+    Library:SetWatermark(('memesense.cc | Criminality | %s | %s fps | %s ms'):format(
         TimeString,
         math.floor(FPS),
         math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
