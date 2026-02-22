@@ -830,101 +830,108 @@ _G.Invis_Disable = Invis_Disable
 _G.IsInvisEnabled = function() return InvisEnabled end
 
 local InstanceNew, CFrameNew, Vec3 = Instance.new, CFrame.new, Vector3.new
-local Players = cloneref(game:GetService("Players"))
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-pcall(function() setfflag("AdornShadingAPI", "true") end) --// required
+pcall(function() setfflag("AdornShadingAPI", "true") end)
 
-local ChamsEnabled = false
-local GlowEnabled = false
+_G.Chams_Enabled = false 
+_G.Glow_Enabled = false
 
---// Chams
-do
-    local function RemoveAdorns(Part): ()
-        if not Part then return end;
-        local Children = Part:GetChildren();
-
-        for i = 1, #Children do
-            local Obj = Children[i]
-            if Obj.Name == "Chams" or Obj.Name == "Glow" then
-                Obj:Destroy();
-            end
+local function RemoveAdorns(Part)
+    local Children = Part:GetChildren()
+    for i = 1, #Children do
+        local Obj = Children[i]
+        if Obj.Name == "Chams" or Obj.Name == "Glow" then
+            Obj:Destroy()
         end
     end
+end
 
-    function CreateAdornment(Part, Type, Color, Trans, ZIndex, SizeOffset, Extra)
-        Extra = Extra or {}
-
-        local Ad
-        if Type == "Cylinder" then
-            Ad = InstanceNew("CylinderHandleAdornment")
-            Ad.Height = Part.Size.Y + (Extra.HeightOffset or 0);
-            Ad.Radius = (Part.Size.X * 0.5) + (Extra.RadiusOffset or 0);
-            Ad.CFrame = CFrameNew(Vec3(), Vec3(0, 1, 0));
-
-        elseif Type == "Box" then
-            Ad = InstanceNew("BoxHandleAdornment")
-            Ad.Size = Part.Size + (SizeOffset or Vec3(0,0,0));
-        end
-
-        Ad.Name = "Chams"
-        Ad.AlwaysOnTop = true
-        Ad.ZIndex = ZIndex
-        Ad.Adornee = Part
-        Ad.Color3 = Color
-        Ad.Transparency = Trans or 0
-        if Extra.Shading then
-            Ad.Shading = Extra.Shading
-        end
-
-        Ad.Parent = Part
-        return Ad
+function CreateAdornment(Part, Type, Color, Trans, ZIndex, SizeOffset, Extra)
+    Extra = Extra or {}
+    local Ad
+    if Type == "Cylinder" then
+        Ad = InstanceNew("CylinderHandleAdornment")
+        Ad.Height = Part.Size.Y + (Extra.HeightOffset or 0)
+        Ad.Radius = (Part.Size.X * 0.5) + (Extra.RadiusOffset or 0)
+        Ad.CFrame = CFrameNew(Vec3(), Vec3(0, 1, 0))
+    elseif Type == "Box" then
+        Ad = InstanceNew("BoxHandleAdornment")
+        Ad.Size = Part.Size + (SizeOffset or Vec3(0,0,0))
     end
 
-    task.spawn(function()
-        while task.wait(2) do
-            local MainColor = Color3.new(); --// you can change these two
-            local GlowColor = Color3.new(1, 1, 1);
-            local Trans = 0.5
+    Ad.Name = Extra.Name or "Chams"
+    Ad.AlwaysOnTop = true
+    Ad.ZIndex = ZIndex
+    Ad.Adornee = Part
+    Ad.Color3 = Color
+    Ad.Transparency = Trans or 0
+    if Extra.Shading then
+        Ad.Shading = Extra.Shading
+    end
 
-            for _, Player in Players:GetPlayers() do
-                local Char = Player.Character
-				if Player == me then continue end
-                if not Char then continue end
+    Ad.Parent = Part
+    return Ad
+end
 
-                for _, Part in Char:GetChildren() do
-                    if not Part:IsA("BasePart") or Part.Transparency >= 1 then continue end;
-
-                    RemoveAdorns(Part)
-
-                    local IsHead = Part.Name == "Head" or Part.Name == "FakeHead"
-
-                    if GlowEnabled then
-                        CreateAdornment(
-                            Part,
-                            IsHead and "Cylinder" or "Box",
-                            Color3.new(GlowColor.R*5, GlowColor.G*5, GlowColor.B*5),
-                            -1,
-                            IsHead and 10 or 9,
-                            Vec3(0.03, 0.03, 0.03),
-                            { Shading = Enum.AdornShading.XRayShaded }
-                        )
-                    end
-
-                    if ChamsEnabled then
-                        CreateAdornment(
-                            Part,
-                            IsHead and "Cylinder" or "Box",
-                            MainColor,
-                            Trans,
-                            10,
-                            Vec3(0.02, 0.02, 0.02)
-                        )
+task.spawn(function()
+    while task.wait(1) do
+        if not _G.ESP_Visible then
+            for _, Player in ipairs(Players:GetPlayers()) do
+                if Player.Character then
+                    for _, Part in ipairs(Player.Character:GetChildren()) do
+                        if Part:IsA("BasePart") then RemoveAdorns(Part) end
                     end
                 end
             end
+            continue
         end
-    end)
-end;
+
+        local MainColor = Color3.new(0, 0, 0)
+        local GlowColor = Color3.new(1, 1, 1)
+        local Trans = 0.5
+
+        for _, Player in ipairs(Players:GetPlayers()) do
+            if Player == LocalPlayer then continue end
+            local Char = Player.Character
+            if not Char then continue end
+
+            for _, Part in ipairs(Char:GetChildren()) do
+                if not Part:IsA("BasePart") or Part.Transparency >= 1 then continue end
+
+                RemoveAdorns(Part)
+
+                local IsHead = Part.Name == "Head" or Part.Name == "FakeHead"
+
+                if _G.Glow_Enabled then
+                    CreateAdornment(
+                        Part,
+                        IsHead and "Cylinder" or "Box",
+                        Color3.new(GlowColor.R*5, GlowColor.G*5, GlowColor.B*5),
+                        -1,
+                        9,
+                        Vec3(0.03, 0.03, 0.03),
+                        { 
+                            Shading = Enum.AdornShading.XRayShaded, 
+                            Name = "Glow"
+                        }
+                    )
+                end
+
+                CreateAdornment(
+                    Part,
+                    IsHead and "Cylinder" or "Box",
+                    MainColor,
+                    Trans,
+                    10,
+                    Vec3(0.02, 0.02, 0.02),
+                    { Name = "Chams" }
+                )
+            end
+        end
+    end
+end)
 
 local parts_list = {
     "Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
@@ -991,7 +998,7 @@ vis:AddToggle('vis7', { Text = 'Show Health Bar', Default = false, Callback = fu
     Default = Color3.new(1, 1, 1), Title = 'Health Bar Color', Transparency = 0,
     Callback = function(Value) ESP.HealthBar_Color = Value end
 })
-vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) ChamsEnabled = Value end })
+vis:AddToggle('vis8', { Text = 'Show Chams', Default = false, Callback = function(Value) _G.Chams_Enabled = Value end })
 vis:AddToggle('vis9', { Text = 'Show Head Dot', Default = false, Callback = function(Value) ESP.Headdot = Value end }):AddColorPicker('headdot color', {
     Default = Color3.new(1, 1, 1), Title = 'Head Dot Color', Transparency = 0,
     Callback = function(Value) ESP.Headdot_Color = Value end
@@ -1023,7 +1030,7 @@ viss:AddToggle('name outline', { Text = 'Name Outline', Default = false, Callbac
 viss:AddToggle('tool outline', { Text = 'Tool Outline', Default = false, Callback = function(Value) ESP.Tool_Outline = Value end })
 viss:AddToggle('dist outline', { Text = 'Distance Outline', Default = false, Callback = function(Value) ESP.Distance_Outline = Value end })
 viss:AddToggle('healtht outline', { Text = 'Health Text Outline', Default = false, Callback = function(Value) ESP.HealthText_Outline = Value end })
-viss:AddToggle('chams glow', { Text = 'Chams Glow', Default = false, Callback = function(Value) GlowEnabled = Value end })
+viss:AddToggle('chams glow', { Text = 'Chams Glow', Default = false, Callback = function(Value) _G.Glow_Enabled = Value end })
 viss:AddSlider('skeleton thickness', {
     Text = 'Skeleton Thickness', Default = 1.5, Min = 1, Max = 10, Rounding = 2, Compact = false,
     Callback = function(Value) ESP.Skeleton_Thickness = Value end
