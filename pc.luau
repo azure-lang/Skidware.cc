@@ -272,19 +272,19 @@ local settings = {
     fireinterval = 0.1,
     shootspeed = 1,
     hitlog = false,
-	sound = false,
-	selected_sound = '92570611018210',
+    sound = false,
+    selected_sound = '92570611018210',
     CheckWhiteList = false,
     bulletTracerEnabled = false,
     tracerColor = Color3.new(1, 1, 1)
 }
 
 local sounds = {
-	['Rust'] = 92570611018210,
-	['Skeet'] = 83717596220569,
-	['Neverlose'] = 6607204501,
-	['Minecraft'] = 136876055001267,
-	['Headshot'] = 140572774008234
+    ['Rust'] = 92570611018210,
+    ['Skeet'] = 83717596220569,
+    ['Neverlose'] = 6607204501,
+    ['Minecraft'] = 136876055001267,
+    ['Headshot'] = 140572774008234
 }
 
 local lastshottime = 0
@@ -308,7 +308,7 @@ local function SendHitLog(targetName, bodyPart, distance)
 end
 
 local function createSound()
-	if not settings.sound then return end
+    if not settings.sound then return end
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://" .. settings.selected_sound
     sound.Volume = 1
@@ -365,7 +365,7 @@ local function FindWallbangPoint(origin, targetPart)
 
     for i = 1, WallbangSamples do
         local angle = (i / WallbangSamples) * math.pi * 2
-        local r = WallbangRadius * (0.6 + math.random() * 0.8)
+        local r = WallbangRadius * (0.6 + math.random())
         local yOff = (math.random() * 2 - 1) * WallbangHeight
         local offset = Vector3.new(math.cos(angle) * r, yOff, math.sin(angle) * r)
         local testPoint = base + offset
@@ -410,9 +410,9 @@ local function GetClosestEnemy()
             local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
             if onScreen then
                 local mouseDistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                if mouseDistance <= settings.fov_radius then
+                if mouseDistance < shortestDistance then
                     local worldDist = (rootPart.Position - myRootPos).Magnitude
-                    if worldDist < settings.distance and mouseDistance < shortestDistance then
+                    if worldDist < settings.distance then
                         shortestDistance = mouseDistance
                         closestEnemy = player
                     end
