@@ -479,7 +479,7 @@ run.Heartbeat:Connect(function()
     if not settings.ragebot then return end
     if me.Character and me.Character:FindFirstChildOfClass("Tool") then
         local now = tick()
-        if now - lastshottime < settings.fireinterval then return end
+        if now - lastshottime < 0.33 then return end
         local target = GetClosestEnemy()
         if target then
             for i = 1, settings.shootspeed do
