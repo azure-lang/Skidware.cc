@@ -1232,9 +1232,6 @@ rage:AddToggle('ragehit', { Text = 'Hit Log', Default = false, Callback = functi
 rage:AddToggle('ragebulletracer', { Text = 'Bullet Tracer', Default = false, Callback = function(Value) settings.bulletTracerEnabled = Value end })
 rage:AddDropdown("hitsound_dropdown", { Text = "Hit Sound List", Values = soundList, Default = "Default", Multi = false, Callback = function(v) settings.selected_sound = sounds[v] end })
 rage:AddSlider('distance', { Text = 'Max Distance', Default = 500, Min = 0, Max = 10000, Rounding = 1, Compact = false, Callback = function(Value) settings.distance = Value end })
-rage:AddSlider('fovradius', { Text = 'FOV Radius', Default = 150, Min = 0, Max = 500, Rounding = 1, Compact = false, Callback = function(Value) settings.fov_radius = Value end })
-rage:AddSlider('shootspeed', { Text = 'Shoot Speed', Default = 15, Min = 0, Max = 100, Rounding = 2, Compact = false, Callback = function(Value) settings.shootspeed = Value end })
-rage:AddSlider('fireinterval', { Text = 'Fire Interval', Default = 0.17, Min = 0, Max = 1, Rounding = 2, Compact = false, Callback = function(Value) settings.fireinterval = Value end })
 
 meele:AddToggle('meele', { Text = 'Toggle', Default = false, Callback = function(Value) 
 		Meele.Toggle = Value
@@ -1370,21 +1367,34 @@ plrc:AddToggle("inv", {
     end
 })
 
+local originalDurations = {}
+
 plrc:AddToggle("fastpick", {
     Text = "Fast Pickup",
     Default = false,
-    Disabled = false,
-    Visible = true,
-    Risky = false,
-
-    Callback = function(Value)    
+    Callback = function(Value)
         if Value then
-        	for _, v in pairs(game:GetDescendants()) do
-				if v:IsA("ProximityPrompt") then
-					v.HoldDuration = 0
-				end
-			end
-		end
+            for _, v in pairs(game:GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    originalDurations[v] = v.HoldDuration
+                    v.HoldDuration = 0
+                end
+            end
+            game:GetDescendants()
+            game.DescendantAdded:Connect(function(v)
+                if v:IsA("ProximityPrompt") then
+                    originalDurations[v] = v.HoldDuration
+                    v.HoldDuration = 0
+                end
+            end)
+        else
+            for v, original in pairs(originalDurations) do
+                if v and v.Parent then
+                    v.HoldDuration = original
+                end
+            end
+            originalDurations = {}
+        end
     end
 })
 
