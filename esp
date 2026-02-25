@@ -35,7 +35,7 @@ local esp = {
     corner_color = Color3.fromRGB(255, 255, 255),
     chams_color = Color3.fromRGB(0, 0, 0),
     glow_color = Color3.fromRGB(255, 255, 255),
-    chams_transparency = 0.5
+    chams_transparency = 0.5,
     friendcheck = true,
     friendcheck_color = Color3.fromRGB(0, 255, 0),
     distance_position = "Bottom",
@@ -296,7 +296,6 @@ do -- Initialize
 end
 
 local InstanceNew, CFrameNew, Vec3 = Instance.new, CFrame.new, Vector3.new
-local Players = cloneref(game:GetService("Players"))
 
 pcall(function() setfflag("AdornShadingAPI", "true") end)
 
@@ -349,7 +348,7 @@ do
             local Trans = esp.chams_transparency
 
             for _, Player in Players:GetPlayers() do
-                if Player == lp then continue end
+                if Player == lplayer then continue end
                 local Char = Player.Character
                 if not Char then continue end
 
