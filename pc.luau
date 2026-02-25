@@ -1458,8 +1458,8 @@ plrc:AddToggle('AutoOpenDoors', {
                     local dist, closest = 15, nil
                     for _, v in pairs(doorsfolder:GetChildren()) do
                         local doorbase = v:FindFirstChild('DoorBase')
-                        if doorbase and lp.Character and lp.Character:FindFirstChild('HumanoidRootPart') then
-                            local distance = (lp.Character.HumanoidRootPart.Position - doorbase.Position).Magnitude
+                        if doorbase and me.Character and me.Character:FindFirstChild('HumanoidRootPart') then
+                            local distance = (me.Character.HumanoidRootPart.Position - doorbase.Position).Magnitude
                             if distance < dist then
                                 dist = distance
                                 closest = v
@@ -1484,8 +1484,8 @@ plrc:AddToggle('AutoOpenDoors', {
                                 local knob1 = door:FindFirstChild('Knob1')
                                 local knob2 = door:FindFirstChild('Knob2')
                                 if knob1 and knob2 then
-                                    local knob1pos = (lp.Character.HumanoidRootPart.Position - knob1.Position).Magnitude
-                                    local knob2pos = (lp.Character.HumanoidRootPart.Position - knob2.Position).Magnitude
+                                    local knob1pos = (me.Character.HumanoidRootPart.Position - knob1.Position).Magnitude
+                                    local knob2pos = (me.Character.HumanoidRootPart.Position - knob2.Position).Magnitude
                                     local chosenknob = (knob1pos < knob2pos) and knob1 or knob2
                                     event:FireServer('Open', chosenknob)
                                 end
