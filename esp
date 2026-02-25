@@ -50,6 +50,15 @@ do
         end
         return _Instance
     end
+    function getool(char)
+        if char then
+            local tool = char:FindFirstChildOfClass("Tool")
+            if tool then
+                return tool.Name
+            end
+        end
+        return "None"
+    end
 end
 
 do -- Initialize
@@ -190,8 +199,8 @@ do -- Initialize
                                     Gradient1.Rotation = RotationAngle
                                     Gradient2.Rotation = RotationAngle
                                 else
-                                    Gradient1.Rotation = -45
-                                    Gradient2.Rotation = -45
+                                    Gradient1.Rotation = -90
+                                    Gradient2.Rotation = -90
                                 end
                                 Tick = tick()
                             end
@@ -251,7 +260,7 @@ do -- Initialize
                             end
 
                             do -- Weapons
-                                Weapon.Text = "none"
+                                Weapon.Text = getool(plr.Character)
                                 Weapon.Visible = esp.weapon
                             end
                         else
