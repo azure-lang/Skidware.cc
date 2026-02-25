@@ -1370,6 +1370,24 @@ plrc:AddToggle("inv", {
     end
 })
 
+plrc:AddToggle("fastpick", {
+    Text = "Fast Pickup",
+    Default = false,
+    Disabled = false,
+    Visible = true,
+    Risky = false,
+
+    Callback = function(Value)    
+        if Value then
+        	for _, v in pairs(game:GetDescendants()) do
+				if v:IsA("ProximityPrompt") then
+					v.HoldDuration = 0
+				end
+			end
+		end
+    end
+})
+
 local autopickup = false
 local connection
 
@@ -1421,6 +1439,87 @@ plrc:AddToggle("autopickup_toggle", {
             end)
         end
     end
+})
+
+local Toggles = {}
+
+plrc:AddToggle('AutoOpenDoors', {
+    Text = 'Auto Open Doors',
+    Default = false,
+    Callback = function(value)
+        if value then
+            Toggles.AutoOpenDoors = run.RenderStepped:Connect(function()
+                local function getdoor()
+                    local map = workspace:FindFirstChild('Map')
+                    if not map then return end
+                    local doorsfolder = map:FindFirstChild('Doors')
+                    if not doorsfolder then return end
+
+                    local dist, closest = 15, nil
+                    for _, v in pairs(doorsfolder:GetChildren()) do
+                        local doorbase = v:FindFirstChild('DoorBase')
+                        if doorbase and lp.Character and lp.Character:FindFirstChild('HumanoidRootPart') then
+                            local distance = (lp.Character.HumanoidRootPart.Position - doorbase.Position).Magnitude
+                            if distance < dist then
+                                dist = distance
+                                closest = v
+                            end
+                        end
+                    end
+                    return closest
+                end
+
+                local door = getdoor()
+                if door then
+                    local values = door:FindFirstChild('Values')
+                    local events = door:FindFirstChild('Events')
+                    if values and events then
+                        local locked = values:FindFirstChild('Locked')
+                        local open = values:FindFirstChild('Open')
+                        local event = events:FindFirstChild('Toggle')
+                        if locked and open and event then
+                            if locked.Value == true then
+                                event:FireServer('Unlock', door.Lock)
+                            elseif locked.Value == false and open.Value == false then
+                                local knob1 = door:FindFirstChild('Knob1')
+                                local knob2 = door:FindFirstChild('Knob2')
+                                if knob1 and knob2 then
+                                    local knob1pos = (lp.Character.HumanoidRootPart.Position - knob1.Position).Magnitude
+                                    local knob2pos = (lp.Character.HumanoidRootPart.Position - knob2.Position).Magnitude
+                                    local chosenknob = (knob1pos < knob2pos) and knob1 or knob2
+                                    event:FireServer('Open', chosenknob)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        else
+            if Toggles.AutoOpenDoors then
+                Toggles.AutoOpenDoors:Disconnect()
+                Toggles.AutoOpenDoors = nil
+            end
+        end
+    end
+})
+
+plrc:AddButton({
+    Text = 'Unbreak Legs',
+    Func = function()
+        local limbs = rp.CharStats[lp.Name].HealthValues
+        for _, v in pairs(limbs:GetChildren()) do
+            for _, i in pairs(v:GetChildren()) do
+                if i and i.Name == 'Broken' then
+                    i.Value = false
+                    i:GetPropertyChangedSignal('Value'):Connect(function()
+                        i.Value = false
+                    end)
+                end
+            end
+        end
+    end,
+    DoubleClick = false,
+    Tooltip = 'This is the main button'
 })
 
 Library:SetWatermarkVisibility(true)
