@@ -8,12 +8,15 @@ local esp = {
     weapon = true,
     healthbar = true,
     healthtext = true,
+    chams = true,
+    glow = true,
     maxdistance = 200,
     fontsize = 11,
     teamcheck = true,
     box_filled = true,
     box_fill_gradient = true,
     box_gradient = true,
+    box_corner = false,
     healthbar_gradient = true,
     healthbar_gradient_lerp = false,
     healthbar_healthtext = true,
@@ -30,6 +33,9 @@ local esp = {
     healthbar_healthtext_color = Color3.fromRGB(119, 120, 255),
     weapon_color = Color3.fromRGB(119, 120, 255),
     corner_color = Color3.fromRGB(255, 255, 255),
+    chams_color = Color3.fromRGB(0, 0, 0),
+    glow_color = Color3.fromRGB(255, 255, 255),
+    chams_transparency = 0.5
     friendcheck = true,
     friendcheck_color = Color3.fromRGB(0, 255, 0),
     distance_position = "Bottom",
@@ -138,40 +144,40 @@ do -- Initialize
                         if esp.teamcheck and plr ~= lplayer and ((lplayer.Team ~= plr.Team and plr.Team) or (not lplayer.Team and not plr.Team)) and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") and plr.Character:FindFirstChild("Humanoid") then
 
                             do -- Corner Boxes
-                                LeftTop.Visible = esp.box
+                                LeftTop.Visible = esp.box_corner
                                 LeftTop.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y - h / 2)
                                 LeftTop.Size = UDim2.new(0, w / 5, 0, 1)
 
-                                LeftSide.Visible = esp.box
+                                LeftSide.Visible = esp.box_corner
                                 LeftSide.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y - h / 2)
                                 LeftSide.Size = UDim2.new(0, 1, 0, h / 5)
 
-                                BottomSide.Visible = esp.box
+                                BottomSide.Visible = esp.box_corner
                                 BottomSide.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y + h / 2)
                                 BottomSide.Size = UDim2.new(0, 1, 0, h / 5)
                                 BottomSide.AnchorPoint = Vector2.new(0, 1)
 
-                                BottomDown.Visible = esp.box
+                                BottomDown.Visible = esp.box_corner
                                 BottomDown.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y + h / 2)
                                 BottomDown.Size = UDim2.new(0, w / 5, 0, 1)
                                 BottomDown.AnchorPoint = Vector2.new(0, 1)
 
-                                RightTop.Visible = esp.box
+                                RightTop.Visible = esp.box_corner
                                 RightTop.Position = UDim2.new(0, Pos.X + w / 2, 0, Pos.Y - h / 2)
                                 RightTop.Size = UDim2.new(0, w / 5, 0, 1)
                                 RightTop.AnchorPoint = Vector2.new(1, 0)
 
-                                RightSide.Visible = esp.box
+                                RightSide.Visible = esp.box_corner
                                 RightSide.Position = UDim2.new(0, Pos.X + w / 2 - 1, 0, Pos.Y - h / 2)
                                 RightSide.Size = UDim2.new(0, 1, 0, h / 5)
                                 RightSide.AnchorPoint = Vector2.new(0, 0)
 
-                                BottomRightSide.Visible = esp.box
+                                BottomRightSide.Visible = esp.box_corner
                                 BottomRightSide.Position = UDim2.new(0, Pos.X + w / 2, 0, Pos.Y + h / 2)
                                 BottomRightSide.Size = UDim2.new(0, 1, 0, h / 5)
                                 BottomRightSide.AnchorPoint = Vector2.new(1, 1)
 
-                                BottomRightDown.Visible = esp.box
+                                BottomRightDown.Visible = esp.box_corner
                                 BottomRightDown.Position = UDim2.new(0, Pos.X + w / 2, 0, Pos.Y + h / 2)
                                 BottomRightDown.Size = UDim2.new(0, w / 5, 0, 1)
                                 BottomRightDown.AnchorPoint = Vector2.new(1, 1)
@@ -199,8 +205,8 @@ do -- Initialize
                                     Gradient1.Rotation = RotationAngle
                                     Gradient2.Rotation = RotationAngle
                                 else
-                                    Gradient1.Rotation = -90
-                                    Gradient2.Rotation = -90
+                                    Gradient1.Rotation = 90
+                                    Gradient2.Rotation = 90
                                 end
                                 Tick = tick()
                             end
@@ -288,3 +294,96 @@ do -- Initialize
         end)
     end
 end
+
+local InstanceNew, CFrameNew, Vec3 = Instance.new, CFrame.new, Vector3.new
+local Players = cloneref(game:GetService("Players"))
+
+pcall(function() setfflag("AdornShadingAPI", "true") end)
+
+do
+    local function RemoveAdorns(Part)
+        if not Part then return end;
+        local Children = Part:GetChildren();
+
+        for i = 1, #Children do
+            local Obj = Children[i]
+            if Obj.Name == "Chams" or Obj.Name == "Glow" then
+                Obj:Destroy();
+            end
+        end
+    end
+
+    function CreateAdornment(Part, Type, Color, Trans, ZIndex, SizeOffset, Extra)
+        Extra = Extra or {}
+
+        local Ad
+        if Type == "Cylinder" then
+            Ad = InstanceNew("CylinderHandleAdornment")
+            Ad.Height = Part.Size.Y + (Extra.HeightOffset or 0);
+            Ad.Radius = (Part.Size.X * 0.5) + (Extra.RadiusOffset or 0);
+            Ad.CFrame = CFrameNew(Vec3(), Vec3(0, 1, 0));
+
+        elseif Type == "Box" then
+            Ad = InstanceNew("BoxHandleAdornment")
+            Ad.Size = Part.Size + (SizeOffset or Vec3(0,0,0));
+        end
+
+        Ad.Name = "Chams"
+        Ad.AlwaysOnTop = true
+        Ad.ZIndex = ZIndex
+        Ad.Adornee = Part
+        Ad.Color3 = Color
+        Ad.Transparency = Trans or 0
+        if Extra.Shading then
+            Ad.Shading = Extra.Shading
+        end
+
+        Ad.Parent = Part
+        return Ad
+    end
+
+    task.spawn(function()
+        while task.wait(2) do
+            local MainColor = esp.chams_color;
+            local GlowColor = esp.glow_color;
+            local Trans = esp.chams_transparency
+
+            for _, Player in Players:GetPlayers() do
+                if Player == lp then continue end
+                local Char = Player.Character
+                if not Char then continue end
+
+                for _, Part in Char:GetChildren() do
+                    if not Part:IsA("BasePart") or Part.Transparency >= 1 then continue end;
+
+                    RemoveAdorns(Part)
+
+                    local IsHead = Part.Name == "Head" or Part.Name == "FakeHead"
+
+                    if esp.glow then
+                        CreateAdornment(
+                            Part,
+                            IsHead and "Cylinder" or "Box",
+                            Color3.new(GlowColor.R*5, GlowColor.G*5, GlowColor.B*5),
+                            -1,
+                            IsHead and 10 or 9,
+                            Vec3(0.03, 0.03, 0.03),
+                            { Shading = Enum.AdornShading.XRayShaded }
+                        )
+                    end
+
+                    if esp.chams then
+                        CreateAdornment(
+                            Part,
+                            IsHead and "Cylinder" or "Box",
+                            MainColor,
+                            Trans,
+                            10,
+                            Vec3(0.02, 0.02, 0.02)
+                        )
+                    end
+                end
+            end
+        end
+    end)
+end;
