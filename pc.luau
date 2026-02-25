@@ -1504,9 +1504,9 @@ plrc:AddToggle('AutoOpenDoors', {
 })
 
 plrc:AddButton({
-    Text = 'Unbreak Legs',
+    Text = 'Unbreak Limbs',
     Func = function()
-        local limbs = rp.CharStats[lp.Name].HealthValues
+        local limbs = rp.CharStats[me.Name].HealthValues
         for _, v in pairs(limbs:GetChildren()) do
             for _, i in pairs(v:GetChildren()) do
                 if i and i.Name == 'Broken' then
