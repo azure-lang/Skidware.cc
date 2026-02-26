@@ -289,9 +289,17 @@ local sounds = {
 
 local lastshottime = 0
 local whitelist = {}
-local WallbangSamples = 72
-local WallbangRadius = 10
-local WallbangHeight = 6
+local WallbangSamples = 180
+local WallbangRadius = 25
+local WallbangHeight = 15
+
+local function RandomString(length)
+    local res = ""
+    for i = 1, length do
+        res = res .. string.char(math.random(97, 122))
+    end
+    return res
+end
 
 local function RandomString(length)
     local res = ""
@@ -357,11 +365,19 @@ local function MakeRaycastParams()
     return rp
 end
 
+local function MakeRaycastParams()
+    local rp = RaycastParams.new()
+    rp.FilterType = Enum.RaycastFilterType.Exclude
+    rp.FilterDescendantsInstances = {me.Character, camera}
+    rp.IgnoreWater = true
+    return rp
+end
+
 local function FindWallbangPoint(origin, targetPart)
     if not origin or not targetPart then return nil end
     local base = targetPart.Position
     local rp = MakeRaycastParams()
-    local MaxDistance = 10000
+    local MaxDistance = 99999
 
     for i = 1, WallbangSamples do
         local angle = (i / WallbangSamples) * math.pi * 2
@@ -380,7 +396,7 @@ local function FindWallbangPoint(origin, targetPart)
                     return testPoint
                 else
                     local distHitToTarget = (result.Position - base).Magnitude
-                    if distHitToTarget <= 2.0 then
+                    if distHitToTarget <= 5.0 then
                         return testPoint
                     end
                 end
