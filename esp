@@ -85,6 +85,7 @@ do -- Initialize
         local Distance = Functions:Create("TextLabel", {Parent = ScreenGui, Position = UDim2.new(0.5, 0, 0, 11), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = Color3.fromRGB(255, 255, 255), Font = Enum.Font.Code, TextSize = esp.fontsize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), RichText = true})
         local Weapon = Functions:Create("TextLabel", {Parent = ScreenGui, Position = UDim2.new(0.5, 0, 0, 31), Size = UDim2.new(0, 100, 0, 20), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, TextColor3 = esp.weapon_color, Font = Enum.Font.Code, TextSize = esp.fontsize, TextStrokeTransparency = 0, TextStrokeColor3 = Color3.fromRGB(0, 0, 0), RichText = true})
         local Box = Functions:Create("Frame", {Parent = ScreenGui, BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 0.75, BorderSizePixel = 0})
+        local Box_Glow = Functions:Create("Frame", {Parent = ScreenGui, BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 1})
         local Gradient1 = Functions:Create("UIGradient", {Parent = Box, Enabled = esp.box_fill_gradient, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, esp.box_fill_gradient_color1), ColorSequenceKeypoint.new(1, esp.box_fill_gradient_color2)}})
         local Outline = Functions:Create("UIStroke", {Parent = Box, Enabled = esp.box_gradient, Transparency = 0, Color = Color3.fromRGB(255, 255, 255), LineJoinMode = Enum.LineJoinMode.Miter})
         local Gradient2 = Functions:Create("UIGradient", {Parent = Outline, Enabled = esp.box_gradient, Color = ColorSequence.new{ColorSequenceKeypoint.new(0, esp.box_gradient_color1), ColorSequenceKeypoint.new(1, esp.box_gradient_color2)}})
@@ -209,6 +210,14 @@ do -- Initialize
                                     Gradient2.Rotation = 90
                                 end
                                 Tick = tick()
+                            end
+
+                            do
+                                Box_Glow.Position = UDim2.new(0, Pos.X - w / 2, 0, Pos.Y - h / 2)
+                                Box_Glow.Size = UDim2.new(0, w + 2, 0, h + 2)
+                                Box_Glow.Visible = true
+                                Box_Glow.Image = "http://www.roblox.com/asset/?id=18245826428"
+                                Box_Glow.ImageColor3 = Color3.fromRGB(0, 255, 0)
                             end
 
                             do -- Healthbar
