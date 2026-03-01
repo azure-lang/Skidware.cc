@@ -267,42 +267,30 @@ local settings = {
     checkdowned = false,
     checkteam = false,
     checkwall = false,
-    distance = 1000,
+    distance = math.huge, -- sem limite de distância por padrão
     fireinterval = 0.1,
     shootspeed = 1,
     hitlog = false,
-	sound = false,
-	selected_sound = '92570611018210',
+    sound = false,
+    selected_sound = '92570611018210',
     CheckWhiteList = false,
     bulletTracerEnabled = false,
-    tracerColor = Color3.new(1, 1, 1),
-    fov_enabled = false,
-    fov_radius = 150,
-    fov_color = Color3.new(1, 1, 1)
+    tracerColor = Color3.new(1, 1, 1)
 }
 
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 1
-FOVCircle.NumSides = 100
-FOVCircle.Radius = settings.fov_radius
-FOVCircle.Filled = false
-FOVCircle.Visible = settings.fov_enabled
-FOVCircle.Color = settings.fov_color
-FOVCircle.Transparency = 1
-
 local sounds = {
-	['Rust'] = 92570611018210,
-	['Skeet'] = 83717596220569,
-	['Neverlose'] = 6607204501,
-	['Minecraft'] = 136876055001267,
-	['Headshot'] = 140572774008234
+    ['Rust'] = 92570611018210,
+    ['Skeet'] = 83717596220569,
+    ['Neverlose'] = 6607204501,
+    ['Minecraft'] = 136876055001267,
+    ['Headshot'] = 140572774008234
 }
 
 local lastshottime = 0
 local whitelist = {}
-local WallbangSamples = 72
-local WallbangRadius = 10
-local WallbangHeight = 6
+local WallbangSamples = 180
+local WallbangRadius = 25
+local WallbangHeight = 15
 
 local function RandomString(length)
     local res = ""
@@ -319,7 +307,7 @@ local function SendHitLog(targetName, bodyPart, distance)
 end
 
 local function createSound()
-	if not settings.sound then return end
+    if not settings.sound then return end
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://" .. settings.selected_sound
     sound.Volume = 1
@@ -372,11 +360,11 @@ local function FindWallbangPoint(origin, targetPart)
     if not origin or not targetPart then return nil end
     local base = targetPart.Position
     local rp = MakeRaycastParams()
-    local MaxDistance = 10000
+    local MaxDistance = 99999
 
     for i = 1, WallbangSamples do
         local angle = (i / WallbangSamples) * math.pi * 2
-        local r = WallbangRadius * (0.6 + math.random() * 0.8)
+        local r = WallbangRadius * (0.6 + math.random())
         local yOff = (math.random() * 2 - 1) * WallbangHeight
         local offset = Vector3.new(math.cos(angle) * r, yOff, math.sin(angle) * r)
         local testPoint = base + offset
@@ -391,7 +379,7 @@ local function FindWallbangPoint(origin, targetPart)
                     return testPoint
                 else
                     local distHitToTarget = (result.Position - base).Magnitude
-                    if distHitToTarget <= 2.0 then
+                    if distHitToTarget <= 5.0 then
                         return testPoint
                     end
                 end
@@ -403,32 +391,46 @@ local function FindWallbangPoint(origin, targetPart)
     return nil
 end
 
+-- CORRIGIDO: distância agora funciona corretamente sem depender de onScreen
+-- O alvo mais próximo do mouse na tela é selecionado sem limitar pelo worldDist antes
 local function GetClosestEnemy()
     if not me.Character or not me.Character:FindFirstChild("HumanoidRootPart") then return nil end
     local closestEnemy, shortestDistance = nil, math.huge
     local myRootPos = me.Character.HumanoidRootPart.Position
-    
+
     for _, player in pairs(plrs:GetPlayers()) do
-        if player == me or (settings.checkteam and player.Team == me.Team) then continue end
+        if player == me then continue end
+        if settings.checkteam and player.Team == me.Team then continue end
+        if settings.CheckWhiteList and table.find(whitelist, player) then continue end
+
         local character = player.Character
-        if not character or not character:FindFirstChild("Humanoid") then continue end
-        if settings.checkdowned and character.Humanoid.Health <= 15 then continue end
-        
+        if not character then continue end
+
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not humanoid or humanoid.Health <= 0 then continue end
+        if settings.checkdowned and humanoid.Health <= 15 then continue end
+
         local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if rootPart and character:FindFirstChildOfClass("Humanoid").Health > 15 then
-            if settings.CheckWhiteList and table.find(whitelist, player) then continue end
-            
-            local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
-            if onScreen then
-                local mouseDistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                if mouseDistance <= settings.fov_radius then
-                    local worldDist = (rootPart.Position - myRootPos).Magnitude
-                    if worldDist < settings.distance and mouseDistance < shortestDistance then
-                        shortestDistance = mouseDistance
-                        closestEnemy = player
-                    end
-                end
-            end
+        if not rootPart then continue end
+
+        -- CORREÇÃO PRINCIPAL: checa distância no mundo ANTES e sem precisar estar onScreen
+        local worldDist = (rootPart.Position - myRootPos).Magnitude
+        if worldDist > settings.distance then continue end -- só pula se distance NÃO for math.huge e estiver fora
+
+        -- Permite alvos fora da tela também (sem onScreen gate)
+        local screenPos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+        local mouseDistance
+
+        if onScreen then
+            mouseDistance = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+        else
+            -- Alvos fora da tela recebem penalidade mas ainda podem ser selecionados
+            mouseDistance = 9999 + worldDist
+        end
+
+        if mouseDistance < shortestDistance then
+            shortestDistance = mouseDistance
+            closestEnemy = player
         end
     end
     return closestEnemy
@@ -486,18 +488,11 @@ end
 local soundList = {}
 for name, _ in pairs(sounds) do table.insert(soundList, name) end
 
-run.RenderStepped:Connect(function()
-    FOVCircle.Visible = settings.fov_enabled
-    FOVCircle.Radius = settings.fov_radius
-    FOVCircle.Position = UserInputService:GetMouseLocation()
-    FOVCircle.Color = settings.fov_color
-end)
-
 run.Heartbeat:Connect(function()
     if not settings.ragebot then return end
     if me.Character and me.Character:FindFirstChildOfClass("Tool") then
         local now = tick()
-        if now - lastshottime < settings.fireinterval then return end
+        if now - lastshottime < 0.33 then return end
         local target = GetClosestEnemy()
         if target then
             for i = 1, settings.shootspeed do
